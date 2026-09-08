@@ -79,7 +79,8 @@ docker compose down -v                # dừng và xóa luôn dữ liệu
 
 - Đăng ký bằng **họ tên, số điện thoại, mật khẩu** (email không bắt buộc). Sau khi đăng ký thành công, người dùng được đưa về trang đăng nhập với số điện thoại điền sẵn.
 - Đăng nhập bằng **số điện thoại + mật khẩu**, nhận JWT. Số điện thoại chấp nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx`.
-- Mọi trang chính yêu cầu đăng nhập; chưa có token sẽ chuyển về `/login` và quay lại trang cũ sau khi đăng nhập.
+- Mọi trang ứng dụng (`/dashboard`, `/chat`, `/ocr`, `/profile`) yêu cầu đăng nhập; chưa có token sẽ chuyển về `/login` và quay lại trang cũ sau khi đăng nhập.
+- Landing page `/` công khai với menu ngang. Sau đăng nhập, ứng dụng dùng sidebar trái.
 
 Chi tiết endpoint: [backend/README.md](./backend/README.md).
 

@@ -21,7 +21,7 @@ export function RegisterPage() {
 
   useEffect(() => () => void dispatch(clearAuthError()), [dispatch])
 
-  if (isAuthenticated) return <Navigate to={ROUTES.HOME} replace />
+  if (isAuthenticated) return <Navigate to={ROUTES.DASHBOARD} replace />
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target

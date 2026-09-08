@@ -65,10 +65,14 @@ src/
 │   ├── auth/
 │   │   ├── RequireAuth.tsx   Guard route: chưa có token → /login, đang xác minh → màn chờ
 │   │   └── PasswordToggle.tsx
+│   ├── layout/
+│   │   ├── Sidebar.tsx   Logo + điều hướng APP_NAV + user/đăng xuất, dùng trong AppLayout
+│   │   └── NavIcon.tsx   Icon SVG nét mảnh (home, chat, scan, profile, logout, menu, close)
 │   └── <domain>/         Component riêng từng domain (chat/, ocr/...), tạo khi cần
 ├── constants/
 │   ├── app.ts            APP_NAME, MEDICAL_DISCLAIMER
-│   ├── routes.ts         ROUTES.HOME, ROUTES.CHAT, ...
+│   ├── nav.ts            APP_NAV (sidebar), LANDING_NAV (menu ngang)
+│   ├── routes.ts         ROUTES.HOME (landing), DASHBOARD, CHAT, OCR, PROFILE, LOGIN, REGISTER
 │   ├── storage.ts        STORAGE_KEYS (key localStorage)
 │   └── index.ts
 ├── context/
@@ -79,14 +83,16 @@ src/
 │   ├── useTheme.ts       Đọc ThemeContext
 │   └── useGeolocation.ts Xin vị trí khi người dùng bấm, có error để fallback
 ├── layouts/
-│   ├── MainLayout.tsx    Header + nav + footer disclaimer, bọc các trang chính
-│   └── AuthLayout.tsx    Khung giữa màn hình cho login/register
+│   ├── LandingLayout.tsx Công khai: header menu ngang + footer (landing, 404)
+│   ├── AuthLayout.tsx    2 cột thương hiệu + form cho login/register
+│   └── AppLayout.tsx     Sau đăng nhập: sidebar trái cố định (desktop), drawer + topbar (mobile)
 ├── pages/                Mỗi route một trang, nhóm theo domain
+│   ├── landing/LandingPage.tsx   Hero, tính năng, cách hoạt động, personas, CTA
 │   ├── auth/LoginPage.tsx, RegisterPage.tsx
+│   ├── dashboard/DashboardPage.tsx   Trang đầu sau đăng nhập
 │   ├── chat/ChatPage.tsx
 │   ├── ocr/OcrPage.tsx
 │   ├── health-profile/ProfilePage.tsx
-│   ├── dashboard/HomePage.tsx, DashboardPage.tsx
 │   └── NotFoundPage.tsx
 ├── redux/
 │   ├── store.ts          configureStore, export RootState / AppDispatch
@@ -151,12 +157,22 @@ Chỉ biến có tiền tố `VITE_` mới được đưa vào bundle. Không co
 
 Quy tắc chi tiết dành cho AI/agent nằm trong `CLAUDE.md`.
 
+## Bố cục & điều hướng
+
+| Khu vực | Layout | Route | Điều hướng |
+|---|---|---|---|
+| Landing (công khai) | `LandingLayout` | `/`, `*` | Menu ngang: anchor tới section + nút Đăng nhập / Đăng ký (đã đăng nhập thì hiện "Vào ứng dụng") |
+| Auth | `AuthLayout` | `/login`, `/register` | — |
+| Ứng dụng (cần đăng nhập) | `RequireAuth` → `AppLayout` | `/dashboard`, `/chat`, `/ocr`, `/profile` | Sidebar trái 256px trên `lg`, drawer + topbar có nút menu dưới `lg` |
+
+Thêm mục sidebar: sửa `APP_NAV` trong `constants/nav.ts` (icon phải có trong `NavIcon`). Thêm mục menu landing: sửa `LANDING_NAV`.
+
 ## Luồng xác thực
 
 - `RegisterPage` → `POST /auth/register` `{ fullName, phone, password, email? }` → thành công thì `navigate('/login', { state: { registeredPhone } })`. Không tự đăng nhập.
-- `LoginPage` → `POST /auth/login` `{ phone, password }` → lưu token vào `localStorage` (`STORAGE_KEYS.TOKEN`) → về trang trước đó (`state.from`) hoặc `/`.
+- `LoginPage` → `POST /auth/login` `{ phone, password }` → lưu token vào `localStorage` (`STORAGE_KEYS.TOKEN`) → về trang trước đó (`state.from`) hoặc `/dashboard`.
 - `App.tsx` có `SessionBootstrap`: khi tải trang mà có token, gọi `fetchMe` để lấy user; 401 thì xóa token.
-- `RequireAuth` bọc toàn bộ route trong `MainLayout`.
+- `RequireAuth` bọc toàn bộ route trong `AppLayout`. Landing `/` luôn công khai.
 - Số điện thoại được chuẩn hóa ở cả 2 phía: `+84xxxxxxxxx` → `0xxxxxxxxx`, chấp nhận đầu 03/05/07/08/09.
 
 ## Design system — "Clinical Clarity"

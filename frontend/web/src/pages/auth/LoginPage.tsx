@@ -28,7 +28,7 @@ export function LoginPage() {
   // Xóa lỗi cũ của slice khi rời trang
   useEffect(() => () => void dispatch(clearAuthError()), [dispatch])
 
-  if (isAuthenticated) return <Navigate to={state.from ?? ROUTES.HOME} replace />
+  if (isAuthenticated) return <Navigate to={state.from ?? ROUTES.DASHBOARD} replace />
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -39,7 +39,7 @@ export function LoginPage() {
     }
     setFieldErrors({})
     const result = await dispatch(login(parsed.data))
-    if (login.fulfilled.match(result)) navigate(state.from ?? ROUTES.HOME, { replace: true })
+    if (login.fulfilled.match(result)) navigate(state.from ?? ROUTES.DASHBOARD, { replace: true })
   }
 
   return (
