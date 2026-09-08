@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+/* Design tokens của OmniCare. Dùng bg-primary, text-primary... trong className */
+@theme {
+  --color-primary: #0f9d8a;
+  --color-primary-dark: #0b7d6e;
+  --color-primary-light: #e6f6f3;
+  --color-danger: #dc2626;
+  --color-warning: #f59e0b;
+  --color-success: #16a34a;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
