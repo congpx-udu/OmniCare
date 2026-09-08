@@ -39,6 +39,19 @@ Kiểm tra nhanh:
 curl http://localhost:3000/api/health
 ```
 
+## Chạy bằng Docker
+
+```bash
+# ở thư mục gốc repo
+docker compose up -d --build          # Mongo + backend, http://localhost:3000/api
+docker compose logs -f backend
+docker compose down
+```
+
+`Dockerfile` build 2 stage: `npm ci` + `tsc` → image runtime chỉ chứa `dist/` và dependencies production, chạy `node dist/server.js` với user `node`, healthcheck gọi `/api/health`. Biến môi trường lấy từ `.env` qua `env_file` trong `docker-compose.yml`. Khi kết nối Mongo trong compose, dùng `MONGO_URI=mongodb://mongo:27017/omnicare`.
+
+Lỗi thường gặp: frontend báo `502 Bad Gateway` tại `/api/*` → backend chưa chạy trên cổng 3000.
+
 ## Scripts
 
 | Lệnh | Mô tả |

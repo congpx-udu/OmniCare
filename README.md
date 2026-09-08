@@ -20,26 +20,54 @@ OmniCare/
 
 ## Chạy dự án (dev)
 
-Yêu cầu: Node.js ≥ 20, npm ≥ 10, MongoDB (Atlas hoặc Docker).
+Yêu cầu: Node.js ≥ 20, npm ≥ 10, Docker Desktop (đang chạy). Backend cần MongoDB: dùng Atlas (điền `MONGO_URI` trong `backend/.env`) hoặc Mongo trong Docker.
+
+**Bước 1 — cấu hình backend (một lần)**
 
 ```bash
-# 1. MongoDB cục bộ (bỏ qua nếu dùng Atlas)
-docker compose up -d
-
-# 2. Backend — http://localhost:3000/api
 cd backend
-cp .env.example .env        # điền MONGO_URI, JWT_SECRET
-npm install
-npm run dev
+cp .env.example .env        # điền MONGO_URI, JWT_SECRET (≥ 16 ký tự)
+```
 
-# 3. Frontend — http://localhost:5173
+**Bước 2 — chạy backend.** Chọn một trong hai cách:
+
+| | Cách A: Docker (khuyên dùng) | Cách B: npm |
+|---|---|---|
+| Lệnh | `docker compose up -d --build` (ở thư mục gốc) | `cd backend && npm install && npm run dev` |
+| Khi nào | Không muốn cài Node/Mongo, hoặc muốn chạy nền | Đang sửa code backend, cần hot reload |
+| Mongo | Tự chạy kèm container `omnicare-mongo` | Tự lo (Atlas hoặc `docker compose up -d mongo`) |
+| Log | `docker compose logs -f backend` | in ra terminal |
+| Dừng | `docker compose down` | Ctrl+C |
+
+Kiểm tra: `curl http://localhost:3000/api/health` phải trả `"db":"connected"`.
+
+**Bước 3 — chạy frontend**
+
+```bash
 cd frontend/web
 cp .env.example .env.local
 npm install
-npm run dev
+npm run dev                 # http://localhost:5173
 ```
 
-Trong lúc dev, Vite proxy `/api/*` sang backend nên không cần cấu hình CORS thêm.
+Vite proxy `/api/*` sang `http://localhost:3000`. Nếu trình duyệt báo **502 Bad Gateway** ở `/api/...` nghĩa là backend chưa chạy hoặc chưa lên cổng 3000, xem lại Bước 2.
+
+### Docker chi tiết
+
+```bash
+docker compose up -d                  # Mongo + backend
+docker compose up -d --build backend  # build lại image sau khi sửa code backend
+docker compose up -d mongo            # chỉ Mongo, backend chạy bằng npm
+docker compose logs -f backend        # xem log
+docker compose ps                     # trạng thái + healthcheck
+docker compose down                   # dừng (giữ dữ liệu Mongo và uploads trong volume)
+docker compose down -v                # dừng và xóa luôn dữ liệu
+```
+
+- `backend/Dockerfile`: multi-stage, build TypeScript ra `dist/` rồi chạy `node dist/server.js` với user không phải root, có healthcheck `/api/health`.
+- Container backend đọc biến từ `backend/.env` (`env_file`). Muốn dùng Mongo trong compose thay vì Atlas, bỏ comment dòng `MONGO_URI: mongodb://mongo:27017/omnicare` trong `docker-compose.yml`. Trong mạng Docker, host của Mongo là `mongo`, không phải `localhost`.
+- Ảnh upload lưu ở volume `backend-uploads`, dữ liệu Mongo ở volume `mongo-data`.
+- Frontend và `ai/` chưa có Dockerfile, sẽ thêm ở Giai đoạn 6.
 
 ## Luồng xác thực
 
