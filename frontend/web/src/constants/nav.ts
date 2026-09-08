@@ -9,10 +9,3 @@ export const APP_NAV: ReadonlyArray<{ to: string; label: string; icon: AppNavIco
   { to: ROUTES.OCR, label: 'Hồ sơ OCR', icon: 'scan' },
   { to: ROUTES.PROFILE, label: 'Hồ sơ sức khỏe', icon: 'profile' },
 ]
-
-/** Menu ngang landing page (anchor tới các section) */
-export const LANDING_NAV = [
-  { href: '#features', label: 'Tính năng' },
-  { href: '#how-it-works', label: 'Cách hoạt động' },
-  { href: '#personas', label: 'Dành cho ai' },
-] as const

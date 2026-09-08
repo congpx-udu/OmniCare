@@ -1,4 +1,5 @@
 export * from './app'
+export * from './landing'
 export * from './nav'
 export * from './routes'
 export * from './storage'

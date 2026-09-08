@@ -39,7 +39,7 @@ Trước khi báo hoàn thành: `npm run typecheck` và `npm run lint` phải s�
 | `src/pages/` | Mỗi route một component trang, nhóm theo domain: `auth/`, `chat/`, `ocr/`, `health-profile/`, `dashboard/`. Tên file `XxxPage.tsx`. Trang chỉ ghép component và gọi hook, không chứa logic phức tạp. | `chat/ChatPage.tsx`, `NotFoundPage.tsx` |
 | `src/layouts/` | Khung bọc ngoài trang, có `<Outlet />`. | `LandingLayout.tsx` (menu ngang, công khai), `AuthLayout.tsx`, `AppLayout.tsx` (sidebar trái, sau đăng nhập) |
 | `src/components/common/` | Component UI thuần, tái sử dụng, không gọi API. | `Button.tsx`, `Input.tsx`, `Alert.tsx`, `Logo.tsx`, `MedicalDisclaimer.tsx` |
-| `src/components/<domain>/` | Component riêng của một domain (ví dụ `chat/MessageBubble.tsx`, `ocr/UploadDropzone.tsx`). Tạo thư mục khi cần. | `auth/RequireAuth.tsx`, `auth/PasswordToggle.tsx`, `layout/Sidebar.tsx`, `layout/NavIcon.tsx` |
+| `src/components/<domain>/` | Component riêng của một domain (ví dụ `chat/MessageBubble.tsx`, `ocr/UploadDropzone.tsx`). Tạo thư mục khi cần. | `auth/RequireAuth.tsx`, `auth/PasswordToggle.tsx`, `layout/Sidebar.tsx`, `layout/NavIcon.tsx`, `landing/*` (MaskedCard, HeroSection, ...) |
 | `src/constants/` | Hằng số: `routes.ts` (đường dẫn route), `nav.ts` (`APP_NAV` sidebar, `LANDING_NAV` menu ngang), `storage.ts` (key localStorage), `app.ts` (tên app, disclaimer). Export gom qua `index.ts`. | `routes.ts`, `nav.ts`, `storage.ts`, `app.ts` |
 | `src/types/` | Interface/type dùng chung nhiều nơi. Type chỉ dùng trong một service thì để cạnh service đó. | `user.ts`, `api.ts` |
 | `src/validators/` | Zod schema cho form, export kèm `z.infer` type. | `auth.ts` |
@@ -70,7 +70,7 @@ Page → hook / dispatch thunk → service → axiosClient → backend
 - **Không** gọi `axios`/`fetch` trực tiếp trong component hoặc page. Luôn đi qua `services/`.
 - Không gọi `setState` đồng bộ trong `useEffect`. Lấy dữ liệu theo sự kiện người dùng hoặc qua thunk.
 - Đăng nhập bằng **số điện thoại + mật khẩu** (không phải email). Đăng ký xong chuyển về `/login`, không tự đăng nhập. Sau đăng nhập vào `/dashboard`.
-- Bố cục: landing `/` công khai dùng `LandingLayout` (menu ngang); trang ứng dụng dùng `AppLayout` (sidebar trái) và bọc bởi `RequireAuth`. Trang mới của ứng dụng: thêm route dưới `AppLayout` trong `routes.tsx` và mục trong `APP_NAV`. Không tạo header ngang riêng trong trang ứng dụng.
+- Bố cục: landing `/` công khai dùng `LandingLayout` (navbar cố định + panel Menu, 3 section full-height kiểu "masked cards", ảnh trong `constants/landing.ts`); trang ứng dụng dùng `AppLayout` (sidebar trái) và bọc bởi `RequireAuth`. Trang mới của ứng dụng: thêm route dưới `AppLayout` trong `routes.tsx` và mục trong `APP_NAV`. Không tạo header ngang riêng trong trang ứng dụng.
 - State: server data và auth → Redux slice. Theme/cấu hình UI → Context. State cục bộ → `useState`.
 - Validate form và response quan trọng bằng Zod, suy kiểu bằng `z.infer`.
 - Styling chỉ bằng Tailwind class. Không CSS module, không styled-components. Màu thương hiệu theo design system "Clinical Clarity" (bảng trong `README.md`): `primary` (navy), `secondary` (teal), `tertiary` (sky), `neutral` (slate), mỗi màu có thang 50–900; nền `background`/`surface`/`surface-muted`; trạng thái `danger`/`warning`/`success`/`info`; font `font-heading` (Manrope) cho tiêu đề/nút, `font-sans` (Plus Jakarta Sans) cho body. Không tự thêm mã hex mới trong component.

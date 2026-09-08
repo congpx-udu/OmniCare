@@ -68,10 +68,19 @@ src/
 │   ├── layout/
 │   │   ├── Sidebar.tsx   Logo + điều hướng APP_NAV + user/đăng xuất, dùng trong AppLayout
 │   │   └── NavIcon.tsx   Icon SVG nét mảnh (home, chat, scan, profile, logout, menu, close)
+│   ├── landing/          Landing page "masked cards" 3 màn full-height
+│   │   ├── LandingNavbar.tsx  Navbar cố định, nút Menu + hamburger, panel trượt từ phải
+│   │   ├── SplashScreen.tsx   Đếm 0→100 trong 2s, chỉ hiện lần đầu mỗi phiên (sessionStorage)
+│   │   ├── MaskedCard.tsx     Card hiển thị một "cửa sổ" của ảnh nền chung cả section
+│   │   ├── HeroSection.tsx    Màn 1: 3 thanh + card hero (masked)
+│   │   ├── FeaturesSection.tsx  Màn 2: lưới 4 card (masked) + 4 thẻ tính năng
+│   │   ├── PersonasSection.tsx  Màn 3: card nền đặc + ảnh thường + 2 card đè
+│   │   └── ArrowIcon.tsx
 │   └── <domain>/         Component riêng từng domain (chat/, ocr/...), tạo khi cần
 ├── constants/
 │   ├── app.ts            APP_NAME, MEDICAL_DISCLAIMER
-│   ├── nav.ts            APP_NAV (sidebar), LANDING_NAV (menu ngang)
+│   ├── nav.ts            APP_NAV (sidebar)
+│   ├── landing.ts        LANDING_IMAGES (ảnh, đang là placeholder), LANDING_MENU, HERO_BARS, FEATURE_CARDS
 │   ├── routes.ts         ROUTES.HOME (landing), DASHBOARD, CHAT, OCR, PROFILE, LOGIN, REGISTER
 │   ├── storage.ts        STORAGE_KEYS (key localStorage)
 │   └── index.ts
@@ -81,13 +90,17 @@ src/
 ├── hooks/
 │   ├── useAuth.ts        Đọc token/user từ Redux, trả isAuthenticated
 │   ├── useTheme.ts       Đọc ThemeContext
-│   └── useGeolocation.ts Xin vị trí khi người dùng bấm, có error để fallback
+│   ├── useGeolocation.ts Xin vị trí khi người dùng bấm, có error để fallback
+│   ├── useIsMobile.ts    matchMedia(max-width: 767px)
+│   ├── useMaskPositions.ts  Vị trí từng card so với section (ResizeObserver) cho masked cards
+│   ├── useImageWidth.ts  Chiều rộng ảnh khi scale theo chiều cao section
+│   └── useStaggeredReveal.ts  true khi section vào màn hình (IntersectionObserver), dùng với utils/staggerStyle
 ├── layouts/
 │   ├── LandingLayout.tsx Công khai: header menu ngang + footer (landing, 404)
 │   ├── AuthLayout.tsx    2 cột thương hiệu + form cho login/register
 │   └── AppLayout.tsx     Sau đăng nhập: sidebar trái cố định (desktop), drawer + topbar (mobile)
 ├── pages/                Mỗi route một trang, nhóm theo domain
-│   ├── landing/LandingPage.tsx   Hero, tính năng, cách hoạt động, personas, CTA
+│   ├── landing/LandingPage.tsx   Splash + 3 section, tự cuộn tới #hash
 │   ├── auth/LoginPage.tsx, RegisterPage.tsx
 │   ├── dashboard/DashboardPage.tsx   Trang đầu sau đăng nhập
 │   ├── chat/ChatPage.tsx
@@ -110,6 +123,7 @@ src/
 ├── utils/
 │   ├── cn.ts             Ghép className
 │   ├── apiError.ts       Lấy message lỗi từ response backend
+│   ├── animation.ts      staggerStyle(visible, i): hiện dần, trễ i×120ms
 │   ├── formatDate.ts
 │   └── index.ts
 ├── routes.tsx            createBrowserRouter, khai báo toàn bộ route
@@ -161,11 +175,23 @@ Quy tắc chi tiết dành cho AI/agent nằm trong `CLAUDE.md`.
 
 | Khu vực | Layout | Route | Điều hướng |
 |---|---|---|---|
-| Landing (công khai) | `LandingLayout` | `/`, `*` | Menu ngang: anchor tới section + nút Đăng nhập / Đăng ký (đã đăng nhập thì hiện "Vào ứng dụng") |
+| Landing (công khai) | `LandingLayout` | `/`, `*` | Navbar cố định: logo, nút Menu mở panel trượt (Trang chủ, Tính năng, Dành cho ai, Đăng nhập, Đăng ký); đã đăng nhập thì hiện "Vào ứng dụng" |
 | Auth | `AuthLayout` | `/login`, `/register` | — |
 | Ứng dụng (cần đăng nhập) | `RequireAuth` → `AppLayout` | `/dashboard`, `/chat`, `/ocr`, `/profile` | Sidebar trái 256px trên `lg`, drawer + topbar có nút menu dưới `lg` |
 
-Thêm mục sidebar: sửa `APP_NAV` trong `constants/nav.ts` (icon phải có trong `NavIcon`). Thêm mục menu landing: sửa `LANDING_NAV`.
+Thêm mục sidebar: sửa `APP_NAV` trong `constants/nav.ts` (icon phải có trong `NavIcon`). Thêm mục menu landing: sửa `LANDING_MENU` trong `constants/landing.ts`.
+
+### Landing page "masked cards"
+
+Ba màn full-height liền nhau (spec gốc: `docs/landingpage-requirement.md`, đã đổi nội dung và bảng màu sang OmniCare):
+
+1. **Hero**: 3 thanh + card lớn, cùng một ảnh nền chia qua các card.
+2. **Tính năng**: lưới 4 card chung ảnh nền, card cuối chứa 4 thẻ tính năng.
+3. **Dành cho ai**: card nền đặc, 2 ảnh, ảnh dọc với 2 card đè.
+
+Kỹ thuật masked cards: `useMaskPositions` đo offset từng card so với section, `useImageWidth` tính chiều rộng ảnh khi scale theo chiều cao section, `MaskedCard` đặt `background-position` âm theo offset đó nên các card ghép lại thành một ảnh liền. Ảnh được scale kiểu cover (nếu hẹp hơn section thì scale theo chiều rộng) để không hở nền ở màn hình rộng, thấp.
+
+**Thay ảnh thật:** ghi đè file trong `src/assets/landing/` giữ nguyên tên (`hero-bg.jpg`, `features-bg.jpg` 1920×1080; `personas-bg.jpg` 1280×1600 dọc; `persona-1.jpg`, `persona-2.jpg` 900×1000), hoặc đổi đường dẫn trong `LANDING_IMAGES`. Ảnh hiện tại là gradient placeholder theo bảng màu. Chỉnh `LANDING_FOCAL` nếu chủ thể ảnh không nằm bên phải.
 
 ## Luồng xác thực
 
