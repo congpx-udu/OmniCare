@@ -83,7 +83,7 @@ src/
 ├── services/
 │   └── auth.service.ts       register / login / me, hash mật khẩu, ký JWT
 ├── models/
-│   ├── User.ts               email, password (select:false), fullName
+│   ├── User.ts               phone (unique), email?, password (select:false), fullName
 │   ├── HealthProfile.ts      chiều cao, cân nặng, bệnh nền, dị ứng
 │   ├── ChatMessage.ts        lịch sử chat + context (thời tiết, vị trí, cảm nhận)
 │   └── MedicalRecord.ts      ảnh đơn thuốc/bệnh án, rawText, extracted, status
@@ -128,8 +128,8 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | Method | Path | Mô tả | Trạng thái |
 |---|---|---|---|
 | GET | `/health` | Trạng thái server và DB | ✅ |
-| POST | `/auth/register` | Đăng ký `{ email, password, fullName }` | ✅ |
-| POST | `/auth/login` | Đăng nhập `{ email, password }` → `{ token, user }` | ✅ |
+| POST | `/auth/register` | Đăng ký `{ fullName, phone, password, email? }` → `{ user }` (không trả token, client chuyển về trang đăng nhập) | ✅ |
+| POST | `/auth/login` | Đăng nhập `{ phone, password }` → `{ token, user }`. `phone` nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx` | ✅ |
 | GET 🔒 | `/auth/me` | Thông tin người dùng hiện tại | ✅ |
 | POST 🔒 | `/chat` | Gửi triệu chứng/cảm nhận, nhận phân tích + gợi ý | ⏳ |
 | GET 🔒 | `/chat/history` | Lịch sử chat | ⏳ |
@@ -157,7 +157,7 @@ Lỗi:
 | 400 | Body/params/query không qua Zod |
 | 401 | Thiếu hoặc sai token, sai mật khẩu |
 | 404 | Không tìm thấy route hoặc bản ghi |
-| 409 | Trùng dữ liệu (email đã đăng ký) |
+| 409 | Trùng dữ liệu (số điện thoại hoặc email đã đăng ký) |
 | 500 | Lỗi không xử lý, stack chỉ hiện khi không phải production |
 
 ## Quy ước

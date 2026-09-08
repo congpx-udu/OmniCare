@@ -8,6 +8,7 @@
 - Yêu cầu nghiệp vụ nằm trong BRD (Google Docs). Ngoài phạm vi MVP: chẩn đoán chính thức, kê đơn, đặt lịch/thanh toán, OCR chữ tay, tích hợp smartwatch.
 - Frontend web tại `../frontend/web` (Vite, port 5173). Dịch vụ AI/OCR tại `../ai` (gọi qua `AI_SERVICE_URL`).
 - Mọi response có dạng `{ success, data, message }` hoặc `{ success: false, message, details }`.
+- Xác thực bằng **số điện thoại + mật khẩu**. `phone` là định danh duy nhất (chuẩn hóa `+84` → `0` trong `validators/auth.validator.ts`), `email` tùy chọn và `sparse unique`. `/auth/register` không trả token.
 
 ## 2. Stack
 

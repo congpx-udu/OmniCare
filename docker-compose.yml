@@ -1,0 +1,20 @@
+# Hạ tầng dev cục bộ. Chạy: docker compose up -d
+# Backend / frontend / ai chạy bằng npm & uvicorn ngoài Docker trong giai đoạn dev;
+# Dockerfile cho từng service sẽ thêm ở Giai đoạn 6 (xem docs/plan/PLAN.md).
+services:
+  mongo:
+    image: mongo:7
+    container_name: omnicare-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo-data:

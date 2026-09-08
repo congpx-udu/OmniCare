@@ -57,8 +57,14 @@ src/
 ├── assets/               Ảnh, icon, font
 ├── components/
 │   ├── common/           UI tái sử dụng, không gọi API
-│   │   ├── Button.tsx
+│   │   ├── Button.tsx    5 variant theo design system (primary/secondary/inverted/outline/ghost)
+│   │   ├── Input.tsx     Ô nhập có label, error, hint, rightSlot
+│   │   ├── Alert.tsx     Thông báo error/success/info/warning
+│   │   ├── Logo.tsx      Logo full (có chữ) hoặc mark (biểu tượng)
 │   │   └── MedicalDisclaimer.tsx   Disclaimer bắt buộc trên màn hình chat/gợi ý
+│   ├── auth/
+│   │   ├── RequireAuth.tsx   Guard route: chưa có token → /login, đang xác minh → màn chờ
+│   │   └── PasswordToggle.tsx
 │   └── <domain>/         Component riêng từng domain (chat/, ocr/...), tạo khi cần
 ├── constants/
 │   ├── app.ts            APP_NAME, MEDICAL_DISCLAIMER
@@ -76,7 +82,7 @@ src/
 │   ├── MainLayout.tsx    Header + nav + footer disclaimer, bọc các trang chính
 │   └── AuthLayout.tsx    Khung giữa màn hình cho login/register
 ├── pages/                Mỗi route một trang, nhóm theo domain
-│   ├── auth/LoginPage.tsx
+│   ├── auth/LoginPage.tsx, RegisterPage.tsx
 │   ├── chat/ChatPage.tsx
 │   ├── ocr/OcrPage.tsx
 │   ├── health-profile/ProfilePage.tsx
@@ -85,16 +91,19 @@ src/
 ├── redux/
 │   ├── store.ts          configureStore, export RootState / AppDispatch
 │   ├── hooks.ts          useAppDispatch / useAppSelector đã typed
-│   └── slices/authSlice.ts   token + user, setCredentials / logout
+│   └── slices/authSlice.ts   token, user, status, error; thunk login / register / fetchMe; logout
 ├── services/
-│   ├── authService.ts    login(), me() — gọi axiosClient theo ENDPOINTS
+│   ├── authService.ts    login(), register(), me() — gọi axiosClient theo ENDPOINTS
 │   └── index.ts
 ├── types/
 │   ├── user.ts           User
 │   ├── api.ts            ApiResponse<T>
 │   └── index.ts
+├── validators/
+│   └── auth.ts           Zod schema form login/register, chuẩn hóa số điện thoại
 ├── utils/
 │   ├── cn.ts             Ghép className
+│   ├── apiError.ts       Lấy message lỗi từ response backend
 │   ├── formatDate.ts
 │   └── index.ts
 ├── routes.tsx            createBrowserRouter, khai báo toàn bộ route
@@ -136,11 +145,37 @@ Chỉ biến có tiền tố `VITE_` mới được đưa vào bundle. Không co
 
 - Alias import `@/` trỏ tới `src/`.
 - Không gọi axios/fetch trong component. Luôn đi qua `services/`.
-- Style chỉ bằng Tailwind. Màu thương hiệu: `primary`, `primary-dark`, `primary-light`, `danger`, `warning`, `success` (khai báo trong `src/index.css`).
+- Style chỉ bằng Tailwind. Màu thương hiệu theo design system bên dưới (khai báo trong `src/index.css`).
 - Text giao diện tiếng Việt, tên biến và comment tiếng Anh.
 - Mọi màn hình chat/gợi ý sức khỏe phải có `<MedicalDisclaimer />`.
 
 Quy tắc chi tiết dành cho AI/agent nằm trong `CLAUDE.md`.
+
+## Luồng xác thực
+
+- `RegisterPage` → `POST /auth/register` `{ fullName, phone, password, email? }` → thành công thì `navigate('/login', { state: { registeredPhone } })`. Không tự đăng nhập.
+- `LoginPage` → `POST /auth/login` `{ phone, password }` → lưu token vào `localStorage` (`STORAGE_KEYS.TOKEN`) → về trang trước đó (`state.from`) hoặc `/`.
+- `App.tsx` có `SessionBootstrap`: khi tải trang mà có token, gọi `fetchMe` để lấy user; 401 thì xóa token.
+- `RequireAuth` bọc toàn bộ route trong `MainLayout`.
+- Số điện thoại được chuẩn hóa ở cả 2 phía: `+84xxxxxxxxx` → `0xxxxxxxxx`, chấp nhận đầu 03/05/07/08/09.
+
+## Design system — "Clinical Clarity"
+
+Nguồn: `docs/img/chủ đạo.png`, logo trong `docs/img-des/` (đã cắt viền và copy vào `src/assets/`). Token nằm trong `@theme` của `src/index.css`, dùng như class Tailwind thường.
+
+| Token | Hex | Dùng cho |
+|---|---|---|
+| `primary` (50–900, `-light`, `-dark`) | `#0B2545` | Navy: tiêu đề, nút chính, header, panel thương hiệu |
+| `secondary` (50–900) | `#007A78` | Teal (màu logo): điểm nhấn, link, thành công |
+| `tertiary` (50–900) | `#0284C7` | Sky: thông tin, focus ring, biểu đồ |
+| `neutral` (50–900) | `#64748B` | Slate: text phụ, viền, placeholder |
+| `background` / `surface` / `surface-muted` | `#EEF3FA` / `#FFFFFF` / `#E6EEF8` | Nền trang / card / khối phụ |
+| `danger` / `warning` / `success` / `info` | `#B91C1C` / `#D97706` / `#007A78` / `#0284C7` | Trạng thái |
+| `font-heading` | Manrope | Headline, label, nút (h1–h4 mặc định) |
+| `font-sans` | Plus Jakarta Sans | Body |
+| `rounded-card` | 1rem | Bo góc card |
+
+Font nạp qua Google Fonts trong `index.html`. Ví dụ: `bg-primary text-white`, `text-secondary hover:underline`, `bg-surface-muted`, `focus:ring-tertiary/40`.
 
 ## Tài liệu liên quan
 
