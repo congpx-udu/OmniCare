@@ -15,7 +15,7 @@ REST API của **OmniCare – Trợ lý Sức khỏe Toàn diện AI**. Quản l
 | Validation | Zod 4 |
 | Auth | JWT (jsonwebtoken) + bcryptjs |
 | Upload | multer (ảnh ≤ 10MB) |
-| Bảo mật | helmet, cors |
+| Bảo mật | helmet, cors, express-rate-limit |
 | Logging | pino + pino-http |
 | Dev | tsx watch |
 
@@ -94,7 +94,8 @@ src/
 │   ├── auth.controller.ts    Nhận req, gọi service, trả ok()/created()
 │   └── health.controller.ts  Health check + trạng thái DB
 ├── services/
-│   └── auth.service.ts       register / login / me, hash mật khẩu, ký JWT
+│   ├── auth.service.ts       register / login / me, hash mật khẩu, ký JWT
+│   └── health.service.ts     Trạng thái DB + ping AI service (timeout 2s)
 ├── models/
 │   ├── User.ts               phone (unique), email?, password (select:false), fullName
 │   ├── HealthProfile.ts      chiều cao, cân nặng, bệnh nền, dị ứng
@@ -106,6 +107,7 @@ src/
 │   ├── auth.ts               requireAuth: đọc Bearer token, gắn req.userId
 │   ├── validate.ts           validate(schema) cho body/params/query
 │   ├── upload.ts             multer: JPEG/PNG/WEBP, ≤10MB, lưu uploads/
+│   ├── rateLimit.ts          loginLimiter, registerLimiter (express-rate-limit)
 │   └── errorHandler.ts       notFound + errorHandler (ApiError, Mongo 11000, 500)
 ├── utils/
 │   ├── ApiError.ts           Lỗi có statusCode + factory badRequest/unauthorized/...
@@ -140,9 +142,9 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 
 | Method | Path | Mô tả | Trạng thái |
 |---|---|---|---|
-| GET | `/health` | Trạng thái server và DB | ✅ |
-| POST | `/auth/register` | Đăng ký `{ fullName, phone, password, email? }` → `{ user }` (không trả token, client chuyển về trang đăng nhập) | ✅ |
-| POST | `/auth/login` | Đăng nhập `{ phone, password }` → `{ token, user }`. `phone` nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx` | ✅ |
+| GET | `/health` | Trạng thái server, DB và dịch vụ AI (`ai: ok | unreachable`) | ✅ |
+| POST | `/auth/register` | ⏱ 5/giờ/IP (prod). Đăng ký `{ fullName, phone, password, email? }` → `{ user }` (không trả token, client chuyển về trang đăng nhập) | ✅ |
+| POST | `/auth/login` | ⏱ 10/15 phút/IP (prod). Đăng nhập `{ phone, password }` → `{ token, user }`. `phone` nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx` | ✅ |
 | GET 🔒 | `/auth/me` | Thông tin người dùng hiện tại | ✅ |
 | POST 🔒 | `/chat` | Gửi triệu chứng/cảm nhận, nhận phân tích + gợi ý | ⏳ |
 | GET 🔒 | `/chat/history` | Lịch sử chat | ⏳ |
@@ -171,6 +173,7 @@ Lỗi:
 | 401 | Thiếu hoặc sai token, sai mật khẩu |
 | 404 | Không tìm thấy route hoặc bản ghi |
 | 409 | Trùng dữ liệu (số điện thoại hoặc email đã đăng ký) |
+| 429 | Vượt rate limit `/auth/*`, xem header `RateLimit-*` |
 | 500 | Lỗi không xử lý, stack chỉ hiện khi không phải production |
 
 ## Quy ước

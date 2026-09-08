@@ -13,7 +13,7 @@
 ## 2. Stack
 
 - Node 22, TypeScript strict, ESM (`"type": "module"`, import nội bộ **phải có đuôi `.js`**).
-- Express 5 (async handler tự bắt lỗi), Mongoose 9, Zod 4, jsonwebtoken, bcryptjs, multer, helmet, cors, pino.
+- Express 5 (async handler tự bắt lỗi), Mongoose 9, Zod 4, jsonwebtoken, bcryptjs, multer, helmet, cors, express-rate-limit, pino.
 - Dev: `tsx watch`. Build: `tsc` ra `dist/`.
 - Format: Prettier (không dấu chấm phẩy, nháy đơn). Chưa có linter.
 
@@ -41,7 +41,7 @@ Trước khi báo hoàn thành: `npm run typecheck` phải sạch. Cần MongoDB
 | `src/services/` | Logic nghiệp vụ, truy vấn model, ném `ApiError`. Mỗi domain một file `xxx.service.ts`. Đây là nơi gọi dịch vụ ngoài (AI, OpenWeather). | `auth.service.ts` |
 | `src/models/` | Mongoose schema + model, tên file PascalCase. | `User.ts`, `HealthProfile.ts`, `ChatMessage.ts`, `MedicalRecord.ts` |
 | `src/validators/` | Zod schema cho `{ body, params, query }` của từng route, export kèm `z.infer` type. | `auth.validator.ts` |
-| `src/middlewares/` | `auth.ts` (`requireAuth` gắn `req.userId`), `validate.ts` (Zod), `upload.ts` (multer ảnh ≤10MB), `errorHandler.ts` (`notFound`, `errorHandler`). | |
+| `src/middlewares/` | `auth.ts` (`requireAuth` gắn `req.userId`), `validate.ts` (Zod), `upload.ts` (multer ảnh ≤10MB), `rateLimit.ts` (`loginLimiter`, `registerLimiter`), `errorHandler.ts` (`notFound`, `errorHandler`). | |
 | `src/utils/` | `ApiError` (static `badRequest/unauthorized/notFound/conflict`), `asyncHandler`, `response.ts` (`ok`, `created`), `jwt.ts`. | |
 | `src/types/` | Khai báo type toàn cục, mở rộng `Express.Request` (`userId`). | `express.d.ts` |
 | `uploads/` | Ảnh đơn thuốc người dùng tải lên (gitignore). | |

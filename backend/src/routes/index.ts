@@ -1,9 +1,10 @@
 import { Router } from 'express'
 import { healthCheck } from '../controllers/health.controller.js'
+import { asyncHandler } from '../utils/asyncHandler.js'
 import { authRouter } from './auth.routes.js'
 
 export const apiRouter = Router()
 
-apiRouter.get('/health', healthCheck)
+apiRouter.get('/health', asyncHandler(healthCheck))
 apiRouter.use('/auth', authRouter)
 // TODO: /chat, /ocr, /profile, /context (weather)

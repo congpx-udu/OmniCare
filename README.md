@@ -12,7 +12,7 @@ Yêu cầu nghiệp vụ: BRD-001 v1.0 (Google Docs). Lộ trình triển khai: 
 OmniCare/
 ├── backend/          REST API — Node 22, Express 5, MongoDB (Mongoose), JWT
 ├── frontend/web/     Web app — React 19, Vite, Tailwind v4, Redux Toolkit
-├── ai/               Dịch vụ AI/OCR — Python FastAPI (Giai đoạn 3)
+├── ai/               Dịch vụ AI/OCR — Python 3.12, FastAPI (mới có /health)
 ├── docs/             Tài liệu thiết kế, logo, bảng màu
 ├── docker-compose.yml  MongoDB cho dev cục bộ
 └── docs/plan/PLAN.md Kế hoạch theo giai đoạn (nội bộ)
@@ -20,26 +20,26 @@ OmniCare/
 
 ## Chạy dự án (dev)
 
-Yêu cầu: Node.js ≥ 20, npm ≥ 10, Docker Desktop (đang chạy). Backend cần MongoDB: dùng Atlas (điền `MONGO_URI` trong `backend/.env`) hoặc Mongo trong Docker.
+Yêu cầu: Node.js ≥ 20, npm ≥ 10, Docker Desktop (đang chạy). Backend cần MongoDB: dùng Atlas (điền `MONGO_URI` trong `backend/.env`) hoặc Mongo trong Docker. Dịch vụ AI cần Python ≥ 3.10 nếu chạy ngoài Docker.
 
 **Bước 1 — cấu hình backend (một lần)**
 
 ```bash
-cd backend
-cp .env.example .env        # điền MONGO_URI, JWT_SECRET (≥ 16 ký tự)
+cd backend && cp .env.example .env   # điền MONGO_URI, JWT_SECRET (≥ 16 ký tự)
+cd ../ai && cp .env.example .env     # ANTHROPIC_API_KEY để trống được cho tới Giai đoạn 3
 ```
 
-**Bước 2 — chạy backend.** Chọn một trong hai cách:
+**Bước 2 — chạy backend + AI service.** Chọn một trong hai cách:
 
 | | Cách A: Docker (khuyên dùng) | Cách B: npm |
 |---|---|---|
-| Lệnh | `docker compose up -d --build` (ở thư mục gốc) | `cd backend && npm install && npm run dev` |
+| Lệnh | `docker compose up -d --build` (ở thư mục gốc) | `cd backend && npm install && npm run dev` và `cd ai && pip install -r requirements.txt && uvicorn app.main:app --reload --port 8000` |
 | Khi nào | Không muốn cài Node/Mongo, hoặc muốn chạy nền | Đang sửa code backend, cần hot reload |
-| Mongo | Tự chạy kèm container `omnicare-mongo` | Tự lo (Atlas hoặc `docker compose up -d mongo`) |
+| Mongo, AI | Tự chạy kèm container `omnicare-mongo`, `omnicare-ai` | Tự lo (Atlas hoặc `docker compose up -d mongo`) |
 | Log | `docker compose logs -f backend` | in ra terminal |
 | Dừng | `docker compose down` | Ctrl+C |
 
-Kiểm tra: `curl http://localhost:3000/api/health` phải trả `"db":"connected"`.
+Kiểm tra: `curl http://localhost:3000/api/health` phải trả `"db":"connected"` và `"ai":"ok"`. Nếu `ai` là `unreachable`, dịch vụ AI chưa chạy hoặc `AI_SERVICE_URL` sai (backend vẫn hoạt động, chỉ chat/OCR sau này bị ảnh hưởng).
 
 **Bước 3 — chạy frontend**
 
@@ -55,8 +55,9 @@ Vite proxy `/api/*` sang `http://localhost:3000`. Nếu trình duyệt báo **50
 ### Docker chi tiết
 
 ```bash
-docker compose up -d                  # Mongo + backend
+docker compose up -d                  # Mongo + backend + ai
 docker compose up -d --build backend  # build lại image sau khi sửa code backend
+docker compose up -d --build ai       # build lại image sau khi sửa code ai/
 docker compose up -d mongo            # chỉ Mongo, backend chạy bằng npm
 docker compose logs -f backend        # xem log
 docker compose ps                     # trạng thái + healthcheck
@@ -67,7 +68,12 @@ docker compose down -v                # dừng và xóa luôn dữ liệu
 - `backend/Dockerfile`: multi-stage, build TypeScript ra `dist/` rồi chạy `node dist/server.js` với user không phải root, có healthcheck `/api/health`.
 - Container backend đọc biến từ `backend/.env` (`env_file`). Muốn dùng Mongo trong compose thay vì Atlas, bỏ comment dòng `MONGO_URI: mongodb://mongo:27017/omnicare` trong `docker-compose.yml`. Trong mạng Docker, host của Mongo là `mongo`, không phải `localhost`.
 - Ảnh upload lưu ở volume `backend-uploads`, dữ liệu Mongo ở volume `mongo-data`.
-- Frontend và `ai/` chưa có Dockerfile, sẽ thêm ở Giai đoạn 6.
+- `ai/Dockerfile`: Python 3.12 slim, uvicorn, user không phải root, healthcheck `/health`. Backend trong compose gọi AI qua `http://ai:8000`.
+- Frontend chưa có Dockerfile, sẽ thêm ở Giai đoạn 6.
+
+### Rate limit
+
+`/auth/login` giới hạn 10 lần / 15 phút / IP, `/auth/register` 5 lần / giờ / IP khi `NODE_ENV=production` (Docker). Ở dev nới lên 100. Vượt ngưỡng trả 429 kèm header `RateLimit-*`.
 
 ## Luồng xác thực
 
@@ -122,3 +128,4 @@ Font nạp từ Google Fonts trong `frontend/web/index.html`. Thẻ `h1–h4` m�
 - `docs/plan/PLAN.md` (nội bộ, không commit) — lộ trình 7 giai đoạn, ánh xạ yêu cầu BRD → module.
 - [backend/README.md](./backend/README.md) — API, biến môi trường, cấu trúc.
 - [frontend/web/README.md](./frontend/web/README.md) — cấu trúc, quy ước, design tokens.
+- [ai/README.md](./ai/README.md) — dịch vụ AI/OCR, endpoint, biến môi trường.
