@@ -67,6 +67,8 @@
   /* Nền & bề mặt */
   --color-surface: #ffffff;
   --color-surface-muted: #e6eef8;
+  /* Thẻ tông kem ấm trên nền xanh nhạt (Dashboard, docs/img/Tổng quan.png) */
+  --color-surface-cream: #fbfaf5;
   --color-background: #eef3fa;
 
   /* Trạng thái */

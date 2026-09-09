@@ -74,6 +74,8 @@ def _weather_lines(w: WeatherContext | None) -> list[str]:
         parts.append(w.description.lower())
     if w.rain_chance:
         parts.append(f"khả năng mưa {w.rain_chance * 100:.0f}%")
+    if w.air_quality:
+        parts.append(f"chất lượng không khí {w.air_quality}")
     return ["- " + ", ".join(parts)] if parts else ["- (không có dữ liệu thời tiết)"]
 
 

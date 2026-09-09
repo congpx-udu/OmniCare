@@ -1,51 +1,55 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Alert, MedicalDisclaimer } from '@/components/common'
-import { ROUTES } from '@/constants'
+import { ShortcutCard, SleepBarsCard, StatCard, WeightTrendCard } from '@/components/dashboard'
+import { RecordCard } from '@/components/records'
+import { CurrentWeatherCard, WeatherInsightCard } from '@/components/weather'
+import { BMI_LABELS, ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchProfile } from '@/redux/slices/profileSlice'
 import { fetchRecords } from '@/redux/slices/recordsSlice'
-import { fetchAdvice } from '@/redux/slices/trackingSlice'
-import { fetchWeather } from '@/redux/slices/weatherSlice'
-import { BodyMetricsCard } from '@/components/health-profile'
-import { RecordCard } from '@/components/records'
-import { WeatherSummaryCard } from '@/components/weather'
+import { fetchAdvice, fetchLogs } from '@/redux/slices/trackingSlice'
+import { fetchWeather, fetchWeatherInsight } from '@/redux/slices/weatherSlice'
+import type { NavIconName } from '@/components/layout/NavIcon'
 
-const SHORTCUTS = [
+const SHORTCUTS: ReadonlyArray<{ to: string; icon: NavIconName; title: string; desc: string }> = [
   {
     to: `${ROUTES.CHAT}?mode=symptom`,
-    title: 'Hỏi AI về cảm nhận hôm nay',
-    desc: 'Mô tả triệu chứng, nhận nhóm vấn đề có thể liên quan, mức độ và nơi nên khám.',
-    accent: 'bg-secondary',
+    icon: 'chat',
+    title: 'Trợ lý sức khỏe AI',
+    desc: 'Mô tả triệu chứng để nhận dự đoán, cảnh báo và gợi ý chuyên khoa.',
   },
   {
     to: `${ROUTES.CHAT}?mode=food`,
-    title: 'Gợi ý bữa ăn hôm nay',
-    desc: 'Món ăn hợp thời tiết tại nơi bạn ở, tránh dị ứng và bệnh nền.',
-    accent: 'bg-secondary-300',
+    icon: 'food',
+    title: 'Gợi ý món ăn hôm nay',
+    desc: 'Thực đơn phù hợp thời tiết, giờ giấc và tình trạng sức khỏe.',
+  },
+  {
+    to: ROUTES.WEATHER,
+    icon: 'weather',
+    title: 'Dự báo thời tiết',
+    desc: 'Theo dõi thời tiết và khuyến nghị sức khỏe theo ngày.',
   },
   {
     to: ROUTES.RECORDS,
+    icon: 'scan',
     title: 'Hồ sơ bệnh án',
-    desc: 'Chụp đơn thuốc, bệnh án in máy để OCR và lưu hồ sơ.',
-    accent: 'bg-tertiary',
-  },
-  {
-    to: ROUTES.TRACKING,
-    title: 'Theo dõi sức khỏe',
-    desc: 'Ghi chỉ số, hoạt động mỗi ngày; AI phân tích và đề xuất cải thiện.',
-    accent: 'bg-tertiary-700',
-  },
-  {
-    to: ROUTES.PROFILE,
-    title: 'Hồ sơ sức khỏe',
-    desc: 'Chiều cao, cân nặng, bệnh nền, dị ứng để AI cá nhân hóa lời khuyên.',
-    accent: 'bg-primary',
+    desc: 'Tải lên ảnh bệnh án, đơn thuốc và lưu trữ an toàn.',
   },
 ]
 
-/** Trang đầu tiên sau đăng nhập. Giai đoạn 5 sẽ thêm nhắc thuốc, chỉ số, cảnh báo thời tiết. */
+/** Màu chữ cho AQI 1-5 của OpenWeather */
+const AQI_TONE: Record<number, string> = {
+  1: 'text-secondary-700',
+  2: 'text-secondary-600',
+  3: 'text-warning',
+  4: 'text-danger',
+  5: 'text-danger',
+}
+
+/** Trang Tổng quan: chỉ số nhanh, biểu đồ 7 ngày, thời tiết + ảnh hưởng, bệnh án, nhật ký, lối tắt */
 export function DashboardPage() {
   const { user } = useAuth()
   const dispatch = useAppDispatch()
@@ -58,7 +62,7 @@ export function DashboardPage() {
     if (status === 'idle') void dispatch(fetchProfile())
   }, [dispatch, status])
 
-  // Có vị trí nhớ trong phiên thì tải thời tiết cho thẻ tổng quan
+  // Có vị trí nhớ trong phiên thì tải thời tiết, sau đó hỏi AI "ảnh hưởng đến bạn"
   useEffect(() => {
     if (weather.query && !weather.data && weather.status === 'idle') {
       void dispatch(fetchWeather(weather.query))
@@ -66,24 +70,44 @@ export function DashboardPage() {
   }, [dispatch, weather.query, weather.data, weather.status])
 
   useEffect(() => {
+    if (weather.data && weather.query && weather.insightStatus === 'idle') {
+      void dispatch(fetchWeatherInsight(weather.query))
+    }
+  }, [dispatch, weather.data, weather.query, weather.insightStatus])
+
+  const retryInsight = useCallback(() => {
+    if (weather.query) void dispatch(fetchWeatherInsight(weather.query))
+  }, [dispatch, weather.query])
+
+  useEffect(() => {
     if (records.listStatus === 'idle') void dispatch(fetchRecords({ limit: 3 }))
   }, [dispatch, records.listStatus])
+
+  useEffect(() => {
+    if (tracking.logsStatus === 'idle') void dispatch(fetchLogs(30))
+  }, [dispatch, tracking.logsStatus])
 
   useEffect(() => {
     if (tracking.adviceStatus === 'idle') void dispatch(fetchAdvice())
   }, [dispatch, tracking.adviceStatus])
 
+  const logs = tracking.logs
+  // Nhật ký sắp xếp tăng dần theo ngày, lấy giá trị gần nhất có ghi
+  const latestHeartRate = [...logs].reverse().find((l) => l.heartRate !== null)?.heartRate ?? null
+  const latestSleep = [...logs].reverse().find((l) => l.sleepHours !== null)?.sleepHours ?? null
+  const air = weather.data?.airQuality ?? null
+  const bmi = profile?.bmi ?? null
+  const bmiLabel = bmi !== null ? (BMI_LABELS.find((b) => bmi < b.max) ?? BMI_LABELS.at(-1)) : null
+
   const latestAdvice = tracking.advice[0] ?? null
   const latestRecord = records.items[0] ?? null
   const needsProfile = profile !== null && !profile.isComplete
+
   return (
-    <section className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl">Xin chào, {user?.fullName ?? 'bạn'} 👋</h1>
-        <p className="text-neutral-600">
-          Trợ lý sức khỏe của bạn đã sẵn sàng. Chọn một tính năng để bắt đầu.
-        </p>
-      </div>
+    <section className="space-y-6">
+      <h1 className="font-mono text-2xl font-semibold tracking-[0.12em] uppercase sm:text-3xl">
+        Xin chào, {user?.fullName ?? 'bạn'}
+      </h1>
 
       {needsProfile && (
         <Alert variant="warning">
@@ -95,47 +119,70 @@ export function DashboardPage() {
         </Alert>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <BodyMetricsCard profile={profile} />
-        <WeatherSummaryCard
-          data={weather.data}
-          loading={weather.status === 'loading'}
-          insightSummary={weather.insight?.summary ?? null}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Nhịp tim"
+          icon="heart"
+          value={latestHeartRate !== null ? String(latestHeartRate) : '—'}
+          unit={latestHeartRate !== null ? 'bpm' : undefined}
+          sub={latestHeartRate === null ? 'Chưa ghi' : undefined}
+          to={ROUTES.TRACKING}
+        />
+        <StatCard
+          label="Giấc ngủ"
+          icon="moon"
+          value={latestSleep !== null ? latestSleep.toFixed(1) : '—'}
+          unit={latestSleep !== null ? 'giờ' : undefined}
+          sub={latestSleep === null ? 'Chưa ghi' : undefined}
+          to={ROUTES.TRACKING}
+        />
+        <StatCard
+          label="Chất lượng không khí"
+          icon="wind"
+          value={air ? air.label : '—'}
+          sub={air ? `AQI ${air.aqi}/5 · PM2.5 ${air.pm25}` : 'Chọn vị trí'}
+          tone={air ? AQI_TONE[air.aqi] : undefined}
+          to={ROUTES.WEATHER}
+        />
+        <StatCard
+          label="BMI"
+          icon="scale"
+          value={bmi !== null ? bmi.toFixed(1) : '—'}
+          sub={bmiLabel?.label ?? 'Cần số đo'}
+          tone={bmiLabel?.tone}
+          to={ROUTES.PROFILE}
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {SHORTCUTS.map((s) => (
-          <Link
-            key={s.to}
-            to={s.to}
-            className="group rounded-card bg-surface hover:border-primary-200 border border-neutral-200 p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
-          >
-            <span className={`mb-4 block h-1.5 w-10 rounded-full ${s.accent}`} />
-            <h3 className="group-hover:text-secondary text-lg">{s.title}</h3>
-            <p className="mt-1 text-sm text-neutral-600">{s.desc}</p>
-          </Link>
-        ))}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <WeightTrendCard logs={logs} profileWeightKg={profile?.weightKg ?? null} />
+        <SleepBarsCard logs={logs} />
       </div>
 
-      {latestAdvice && (
+      {weather.data ? (
+        <>
+          <CurrentWeatherCard data={weather.data} />
+          <WeatherInsightCard
+            insight={weather.insight}
+            status={weather.insightStatus}
+            error={weather.insightError}
+            onRetry={retryInsight}
+          />
+        </>
+      ) : (
         <Link
-          to={ROUTES.TRACKING}
-          className="rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-5 transition hover:shadow-lg"
+          to={ROUTES.WEATHER}
+          className="rounded-card bg-surface-cream hover:border-primary-200 flex items-center justify-between border border-neutral-200/80 p-5 transition hover:shadow-md"
         >
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg">Nhật ký sức khỏe</h3>
-            <span className="bg-secondary-50 text-secondary-700 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-              {latestAdvice.suggestions.filter((s) => s.done).length}/
-              {latestAdvice.suggestions.length} đề xuất đã làm
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-neutral-700">{latestAdvice.summary}</p>
-          {latestAdvice.suggestions.find((s) => !s.done) && (
-            <p className="text-primary mt-2 text-sm font-semibold">
-              Tiếp theo: {latestAdvice.suggestions.find((s) => !s.done)!.title}
+          <div>
+            <h3 className="text-lg">Thời tiết & ảnh hưởng đến bạn</h3>
+            <p className="mt-1 text-sm text-neutral-600">
+              {weather.status === 'loading'
+                ? 'Đang tải thời tiết...'
+                : 'Chọn vị trí để xem thời tiết, chất lượng không khí và lưu ý sức khỏe hôm nay.'}
             </p>
-          )}
+          </div>
+          <span className="text-secondary shrink-0 text-sm font-semibold">Chọn vị trí →</span>
         </Link>
       )}
 
@@ -153,6 +200,33 @@ export function DashboardPage() {
           <RecordCard record={latestRecord} />
         </div>
       )}
+
+      {latestAdvice && (
+        <Link
+          to={ROUTES.TRACKING}
+          className="rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-5 transition hover:shadow-md"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-lg">Nhật ký sức khỏe</h3>
+            <span className="bg-secondary-50 text-secondary-700 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+              {latestAdvice.suggestions.filter((s) => s.done).length}/
+              {latestAdvice.suggestions.length} đề xuất đã làm
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-neutral-700">{latestAdvice.summary}</p>
+          {latestAdvice.suggestions.find((s) => !s.done) && (
+            <p className="text-primary mt-2 text-sm font-semibold">
+              Tiếp theo: {latestAdvice.suggestions.find((s) => !s.done)!.title}
+            </p>
+          )}
+        </Link>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {SHORTCUTS.map((s) => (
+          <ShortcutCard key={s.to} {...s} />
+        ))}
+      </div>
 
       <MedicalDisclaimer />
     </section>

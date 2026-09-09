@@ -21,6 +21,8 @@ class WeatherContext(BaseModel):
     description: str | None = None
     wind_kmh: float | None = None
     rain_chance: float | None = Field(default=None, ge=0, le=1)
+    # Ví dụ "Kém (AQI 4/5, PM2.5 55 µg/m³)" — chuỗi đã định dạng sẵn từ backend
+    air_quality: str | None = Field(default=None, max_length=120)
 
 
 class ProfileContext(BaseModel):
