@@ -1,77 +1,124 @@
-import type { Medication } from '@/types'
+import type { MedicationTable as MedicationTableData } from '@/types'
 
 interface MedicationTableProps {
-  value: Medication[]
-  onChange: (next: Medication[]) => void
+  value: MedicationTableData
+  onChange: (next: MedicationTableData) => void
   disabled?: boolean
-}
-
-const COLS: Array<{ key: keyof Medication; label: string; placeholder: string; w: string }> = [
-  { key: 'name', label: 'Tên thuốc', placeholder: 'Amoxicillin 500mg', w: 'w-[26%] min-w-48' },
-  { key: 'dose', label: 'Liều mỗi lần', placeholder: '1 viên', w: 'w-[11%] min-w-24' },
-  {
-    key: 'frequency',
-    label: 'Số lần / ngày',
-    placeholder: '3 lần/ngày sau ăn',
-    w: 'w-[18%] min-w-36',
-  },
-  { key: 'quantity', label: 'Số lượng', placeholder: '21 viên', w: 'w-[11%] min-w-24' },
-  { key: 'duration', label: 'Số ngày', placeholder: '7 ngày', w: 'w-[11%] min-w-24' },
-  { key: 'instructions', label: 'Cách dùng / lưu ý', placeholder: 'Uống sau ăn', w: 'min-w-44' },
-]
-
-const EMPTY: Medication = {
-  name: '',
-  dose: null,
-  frequency: null,
-  quantity: null,
-  duration: null,
-  instructions: null,
 }
 
 const cell =
   'bg-surface focus:border-tertiary w-full rounded-md border border-neutral-200 px-2.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none disabled:bg-neutral-50'
 
-/** Bảng thuốc rõ ràng từng cột (tên, liều, số lần, số lượng, số ngày, cách dùng); người dùng sửa tay sau OCR */
+function slug(label: string, used: Set<string>) {
+  const base =
+    label
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '') || 'col'
+  let key = base
+  let n = 2
+  while (used.has(key)) key = `${base}_${n++}`
+  return key
+}
+
+/**
+ * Bảng thuốc sinh động theo cột mà AI đọc được từ tài liệu (mỗi bệnh viện in khác nhau).
+ * Người dùng sửa từng ô, thêm/xóa dòng, thêm/xóa cột.
+ */
 export function MedicationTable({ value, onChange, disabled }: MedicationTableProps) {
-  const set = (i: number, key: keyof Medication, v: string) => {
-    onChange(value.map((m, idx) => (idx === i ? { ...m, [key]: v === '' ? null : v } : m)))
+  const { columns, rows } = value
+
+  const setCell = (ri: number, key: string, v: string) => {
+    onChange({
+      columns,
+      rows: rows.map((r, i) => (i === ri ? { ...r, [key]: v === '' ? null : v } : r)),
+    })
   }
-  const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i))
-  const add = () => onChange([...value, { ...EMPTY }])
+  const removeRow = (ri: number) => onChange({ columns, rows: rows.filter((_, i) => i !== ri) })
+  const addRow = () =>
+    onChange({ columns, rows: [...rows, Object.fromEntries(columns.map((c) => [c.key, null]))] })
+
+  const addColumn = () => {
+    const label = window.prompt('Tên cột mới (ví dụ: Số lượng, Cách dùng)')?.trim()
+    if (!label) return
+    const key = slug(label, new Set(columns.map((c) => c.key)))
+    onChange({
+      columns: [...columns, { key, label }],
+      rows: rows.map((r) => ({ ...r, [key]: null })),
+    })
+  }
+  const removeColumn = (key: string) => {
+    if (!window.confirm('Xóa cột này và toàn bộ dữ liệu trong cột?')) return
+    onChange({
+      columns: columns.filter((c) => c.key !== key),
+      rows: rows.map((r) => {
+        const { [key]: _omit, ...rest } = r
+        return rest
+      }),
+    })
+  }
+
+  if (columns.length === 0) {
+    return (
+      <div className="rounded-card border border-dashed border-neutral-300 p-4 text-sm text-neutral-500">
+        Tài liệu này không có bảng thuốc.{' '}
+        <button
+          type="button"
+          onClick={addColumn}
+          disabled={disabled}
+          className="text-secondary font-semibold hover:underline"
+        >
+          Tạo bảng
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-2">
       <div className="rounded-card bg-surface overflow-x-auto border border-neutral-200">
-        <table className="w-full min-w-[56rem] border-collapse text-left">
+        <table
+          className="w-full border-collapse text-left"
+          style={{ minWidth: `${8 + columns.length * 11}rem` }}
+        >
           <thead className="bg-surface-muted">
             <tr>
               <th className="w-10 px-3 py-2 text-center text-xs font-semibold text-neutral-500">
                 STT
               </th>
-              {COLS.map((c) => (
-                <th
-                  key={c.key}
-                  className={`px-2 py-2 text-xs font-semibold text-neutral-500 ${c.w}`}
-                >
-                  {c.label}
+              {columns.map((c) => (
+                <th key={c.key} className="group px-2 py-2 text-xs font-semibold text-neutral-600">
+                  <span className="inline-flex items-center gap-1">
+                    {c.label}
+                    <button
+                      type="button"
+                      onClick={() => removeColumn(c.key)}
+                      disabled={disabled}
+                      aria-label={`Xóa cột ${c.label}`}
+                      title="Xóa cột"
+                      className="text-neutral-400 opacity-0 transition group-hover:opacity-100 hover:text-red-600 disabled:hidden"
+                    >
+                      ✕
+                    </button>
+                  </span>
                 </th>
               ))}
               <th className="w-10" />
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {value.map((m, i) => (
-              <tr key={i}>
-                <td className="px-3 py-1.5 text-center text-sm text-neutral-500">{i + 1}</td>
-                {COLS.map((c) => (
+            {rows.map((r, ri) => (
+              <tr key={ri}>
+                <td className="px-3 py-1.5 text-center text-sm text-neutral-500">{ri + 1}</td>
+                {columns.map((c) => (
                   <td key={c.key} className="px-2 py-1.5">
                     <input
-                      value={m[c.key] ?? ''}
-                      onChange={(e) => set(i, c.key, e.target.value)}
-                      placeholder={c.placeholder}
+                      value={r[c.key] ?? ''}
+                      onChange={(e) => setCell(ri, c.key, e.target.value)}
                       disabled={disabled}
-                      aria-label={`${c.label} thuốc ${i + 1}`}
+                      aria-label={`${c.label}, dòng ${ri + 1}`}
                       className={cell}
                     />
                   </td>
@@ -79,9 +126,9 @@ export function MedicationTable({ value, onChange, disabled }: MedicationTablePr
                 <td className="px-2 py-1.5 text-center">
                   <button
                     type="button"
-                    onClick={() => remove(i)}
+                    onClick={() => removeRow(ri)}
                     disabled={disabled}
-                    aria-label={`Xóa thuốc ${i + 1}`}
+                    aria-label={`Xóa dòng ${ri + 1}`}
                     className="text-danger rounded p-1 text-sm hover:bg-neutral-100 disabled:opacity-40"
                   >
                     ✕
@@ -89,27 +136,40 @@ export function MedicationTable({ value, onChange, disabled }: MedicationTablePr
                 </td>
               </tr>
             ))}
-            {value.length === 0 && (
+            {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={COLS.length + 2}
+                  colSpan={columns.length + 2}
                   className="px-3 py-4 text-center text-xs text-neutral-500"
                 >
-                  Chưa có thuốc nào. Bấm "Thêm thuốc" nếu đơn có thuốc.
+                  Chưa có dòng nào.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      <button
-        type="button"
-        onClick={add}
-        disabled={disabled}
-        className="text-secondary text-sm font-semibold hover:underline disabled:opacity-50"
-      >
-        + Thêm thuốc
-      </button>
+      <div className="flex flex-wrap gap-4">
+        <button
+          type="button"
+          onClick={addRow}
+          disabled={disabled}
+          className="text-secondary text-sm font-semibold hover:underline disabled:opacity-50"
+        >
+          + Thêm dòng
+        </button>
+        <button
+          type="button"
+          onClick={addColumn}
+          disabled={disabled}
+          className="text-secondary text-sm font-semibold hover:underline disabled:opacity-50"
+        >
+          + Thêm cột
+        </button>
+      </div>
+      <p className="text-xs text-neutral-500">
+        Các cột được giữ đúng như trên tài liệu gốc. Rê chuột lên tên cột để xóa cột.
+      </p>
     </div>
   )
 }

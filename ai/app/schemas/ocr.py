@@ -31,6 +31,19 @@ class Medication(BaseModel):
     instructions: str | None = None
 
 
+class TableColumn(BaseModel):
+    # key: slug ascii duy nhất; label: tên cột đúng như in trên tài liệu
+    key: str
+    label: str
+
+
+class MedicationTable(BaseModel):
+    """Bảng thuốc đúng theo cột của tài liệu (mỗi bệnh viện in khác nhau)."""
+
+    columns: list[TableColumn] = Field(default_factory=list)
+    rows: list[dict[str, str | None]] = Field(default_factory=list)
+
+
 class OcrResponse(BaseModel):
     document_type: DocumentType
     facility: str | None = None
@@ -39,6 +52,8 @@ class OcrResponse(BaseModel):
     visit_date: str | None = None
     diagnosis: str | None = None
     medications: list[Medication] = Field(default_factory=list)
+    # Bảng thuốc nguyên văn theo cột của tài liệu, để hiển thị minh bạch cho người đọc
+    medication_table: MedicationTable = Field(default_factory=MedicationTable)
     notes: str | None = None
     # Toàn bộ chữ đọc được, giữ thứ tự dòng; nhiều trang thì có dòng "--- Trang N ---"
     raw_text: str

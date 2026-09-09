@@ -157,7 +157,7 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | GET 🔒 | `/records/:id/image/:page` | Ảnh trang thứ `page` (0-based, chỉ chủ sở hữu) | ✅ |
 | POST 🔒 | `/records/:id/reprocess` | OCR lại ảnh đã lưu | ✅ |
 | GET 🔒 | `/records?year=&q=&limit=`, `/records/:id` | Danh sách theo ngày khám giảm dần (`q` tìm chẩn đoán, cơ sở, tên thuốc, ghi chú), chi tiết | ✅ |
-| PUT/DELETE 🔒 | `/records/:id` | Sửa tay `{ facility?, doctor?, visitDate?, diagnosis?, medications?[{name, dose, frequency, quantity, duration, instructions}], notes?, confirm? }` (loại tài liệu do AI nhận dạng) (`confirm: true` → `done`) / xóa hồ sơ và ảnh | ✅ |
+| PUT/DELETE 🔒 | `/records/:id` | Sửa tay `{ facility?, doctor?, visitDate?, diagnosis?, medicationTable?: {columns[{key,label}], rows[]} (bảng đúng cột tài liệu, backend suy ra `medications` chuẩn hóa từ bảng), notes?, confirm? }` (loại tài liệu do AI nhận dạng) (`confirm: true` → `done`) / xóa hồ sơ và ảnh | ✅ |
 | GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
 | PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
 | GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |

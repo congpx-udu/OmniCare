@@ -42,6 +42,11 @@ const medicalRecordSchema = new Schema(
     visitDate: Date,
     diagnosis: { type: String, trim: true },
     medications: { type: [medicationSchema], default: [] },
+    // Bảng thuốc đúng theo cột của tài liệu (hiển thị); medications là bản chuẩn hóa (chat, đếm)
+    medicationTable: {
+      columns: { type: [{ key: String, label: String, _id: false }], default: [] },
+      rows: { type: [Schema.Types.Mixed], default: [] },
+    },
     notes: { type: String, trim: true },
     rawText: String,
     confidence: Number,

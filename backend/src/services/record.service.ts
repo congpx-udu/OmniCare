@@ -32,6 +32,12 @@ const ocrSchema = z.object({
   visit_date: z.string().nullable().default(null),
   diagnosis: z.string().nullable().default(null),
   medications: z.array(medicationSchema).default([]),
+  medication_table: z
+    .object({
+      columns: z.array(z.object({ key: z.string(), label: z.string() })).default([]),
+      rows: z.array(z.record(z.string(), z.string().nullable())).default([]),
+    })
+    .default({ columns: [], rows: [] }),
   notes: z.string().nullable().default(null),
   raw_text: z.string(),
   confidence: z.number(),
@@ -52,6 +58,11 @@ export interface PublicMedication {
   instructions: string | null
 }
 
+export interface MedicationTable {
+  columns: Array<{ key: string; label: string }>
+  rows: Array<Record<string, string | null>>
+}
+
 export interface PublicRecord {
   id: string
   type: RecordType
@@ -62,6 +73,8 @@ export interface PublicRecord {
   visitDate: string | null
   diagnosis: string | null
   medications: PublicMedication[]
+  /** Bảng thuốc đúng cột của tài liệu, dùng để hiển thị và sửa tay */
+  medicationTable: MedicationTable
   notes: string | null
   rawText: string | null
   confidence: number | null
@@ -82,6 +95,10 @@ interface RecordSource {
   visitDate?: Date | null
   diagnosis?: string | null
   medications?: Array<Partial<PublicMedication> & { name: string }>
+  medicationTable?: {
+    columns?: Array<{ key?: string | null; label?: string | null }>
+    rows?: unknown[]
+  } | null
   notes?: string | null
   rawText?: string | null
   confidence?: number | null
@@ -109,6 +126,15 @@ function toPublic(r: RecordSource): PublicRecord {
       duration: m.duration ?? null,
       instructions: m.instructions ?? null,
     })),
+    medicationTable: r.medicationTable?.columns?.length
+      ? {
+          columns: r.medicationTable.columns.map((c) => ({
+            key: String(c.key ?? ''),
+            label: String(c.label ?? ''),
+          })),
+          rows: (r.medicationTable.rows ?? []) as Array<Record<string, string | null>>,
+        }
+      : tableFromMedications(r.medications ?? []),
     notes: r.notes ?? null,
     rawText: r.rawText ?? null,
     confidence: r.confidence ?? null,
@@ -118,6 +144,52 @@ function toPublic(r: RecordSource): PublicRecord {
     createdAt: (r.createdAt ?? new Date()).toISOString(),
     updatedAt: (r.updatedAt ?? new Date()).toISOString(),
   }
+}
+
+/** Hồ sơ cũ chưa có bảng theo tài liệu: dựng bảng mặc định từ medications chuẩn hóa */
+function tableFromMedications(
+  meds: Array<Partial<PublicMedication> & { name: string }>,
+): MedicationTable {
+  const columns = [
+    { key: 'name', label: 'Tên thuốc' },
+    { key: 'dose', label: 'Liều mỗi lần' },
+    { key: 'frequency', label: 'Số lần / ngày' },
+    { key: 'quantity', label: 'Số lượng' },
+    { key: 'duration', label: 'Số ngày' },
+    { key: 'instructions', label: 'Cách dùng' },
+  ]
+  const rows = meds.map((m) => ({
+    name: m.name,
+    dose: m.dose ?? null,
+    frequency: m.frequency ?? null,
+    quantity: m.quantity ?? null,
+    duration: m.duration ?? null,
+    instructions: m.instructions ?? null,
+  }))
+  return { columns, rows }
+}
+
+/** Suy ra medications chuẩn hóa từ bảng người dùng đã sửa: đoán cột theo tên cột */
+function medicationsFromTable(table: MedicationTable): PublicMedication[] {
+  const find = (re: RegExp) => table.columns.find((c) => re.test(c.label.toLowerCase()))?.key
+  const nameKey = find(/tên|thuốc|name|drug|biệt dược/) ?? table.columns[0]?.key
+  const doseKey = find(/liều|dose|hàm lượng mỗi|mỗi lần/)
+  const freqKey = find(/số lần|lần\/|tần suất|frequency|sáng|chiều|tối/)
+  const qtyKey = find(/^sl$|số lượng|s\.l|quantity|đvt|số viên/)
+  const durKey = find(/số ngày|ngày dùng|thời gian|duration/)
+  const insKey = find(/cách dùng|hướng dẫn|ghi chú|lưu ý|instruction|usage/)
+  const pick = (row: Record<string, string | null>, key?: string) =>
+    key ? (row[key] ?? null) : null
+  return table.rows
+    .map((row) => ({
+      name: (nameKey ? row[nameKey] : null) ?? '',
+      dose: pick(row, doseKey),
+      frequency: pick(row, freqKey),
+      quantity: pick(row, qtyKey),
+      duration: pick(row, durKey),
+      instructions: pick(row, insKey),
+    }))
+    .filter((m) => m.name.trim())
 }
 
 /** Chỉ cho phép file trong uploads/ (tránh path traversal nếu DB bị sửa) */
@@ -186,6 +258,7 @@ async function processRecord(recordId: string, userId: string, hint?: RecordType
       visitDate: parseVisitDate(ocr.visit_date),
       diagnosis: ocr.diagnosis,
       medications: ocr.medications,
+      medicationTable: ocr.medication_table,
       notes: ocr.notes,
       rawText: ocr.raw_text,
       confidence: ocr.confidence,
@@ -260,9 +333,15 @@ export async function getRecordImage(userId: string, id: string, page: number) {
 export async function updateRecord(userId: string, id: string, input: UpdateRecordInput) {
   const record = await MedicalRecord.findOne({ _id: id, user: userId })
   if (!record) throw ApiError.notFound('Không tìm thấy hồ sơ')
-  const { confirm, ...fields } = input
+  const { confirm, medicationTable, ...fields } = input
   for (const [key, value] of Object.entries(fields)) {
     if (value !== undefined) record.set(key, value)
+  }
+  if (medicationTable) {
+    record.set('medicationTable', medicationTable)
+    // Bảng là nguồn sự thật người dùng nhìn thấy; đồng bộ bản chuẩn hóa để chat/đếm không lệch
+    if (input.medications === undefined)
+      record.set('medications', medicationsFromTable(medicationTable))
   }
   if (confirm) record.status = 'done'
   else if (record.status === 'failed' || record.status === 'pending') record.status = 'needs_review'

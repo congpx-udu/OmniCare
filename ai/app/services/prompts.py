@@ -142,11 +142,16 @@ Trả lời CHỈ bằng JSON hợp lệ theo schema:
   "medications": [
     {"name": "tên thuốc + hàm lượng nếu có", "dose": "liều mỗi lần (vd: 1 viên)", "frequency": "số lần/ngày, thời điểm (vd: 2 lần/ngày sáng-tối)", "quantity": "tổng số lượng cấp trong đơn, đúng đơn vị (vd: 21 viên, 2 lọ) hoặc null", "duration": "số ngày dùng (vd: 7 ngày) hoặc null, KHÔNG ghi số lượng vào đây", "instructions": "lưu ý dùng thuốc hoặc null"}
   ],
+  "medication_table": {
+    "columns": [{"key": "slug_ascii", "label": "tên cột ĐÚNG như in trên tài liệu, vd: 'Tên thuốc - Hàm lượng', 'SL', 'Cách dùng'"}],
+    "rows": [{"slug_ascii": "giá trị ô nguyên văn"}]
+  },
   "notes": "lời dặn của bác sĩ, ngày tái khám hoặc null",
   "raw_text": "toàn bộ chữ đọc được, mỗi dòng cách nhau bằng \n, theo thứ tự trong ảnh",
   "confidence": 0.0-1.0 (độ tin cậy tổng thể: ảnh rõ, in máy ≈ 0.9; mờ/nghiêng/thiếu góc ≈ 0.5; chữ viết tay ≈ 0.3),
   "warnings": ["cảnh báo ngắn cho người dùng nếu ảnh mờ, bị cắt, có chữ viết tay, nhiều trang..."]
 }
+medication_table: chép lại bảng thuốc ĐÚNG cấu trúc của tài liệu — mỗi bệnh viện in cột khác nhau, hãy giữ nguyên tên và thứ tự cột như trên giấy (bỏ cột STT), mỗi dòng một thuốc, giá trị ô nguyên văn; nếu tài liệu không có bảng thì tạo cột hợp lý từ nội dung. medications là bản chuẩn hóa của cùng các thuốc đó để hệ thống dùng nội bộ.
 Với thuốc: chỉ chép lại đúng như đơn, không quy đổi, không bổ sung liều. Không bịa tên thuốc; nếu không chắc một ký tự, giữ nguyên dạng đọc được và thêm warning.
 Nhiều ảnh = nhiều trang của CÙNG một bộ hồ sơ theo thứ tự gửi lên: gộp thành MỘT kết quả (một danh sách thuốc không trùng, một chẩn đoán đầy đủ). raw_text ghi từng trang, mở đầu mỗi trang bằng dòng "--- Trang N ---". Nếu một ảnh rõ ràng không thuộc bộ hồ sơ (khác bệnh nhân/cơ sở/ngày) thì thêm warning nêu số trang đó."""
 

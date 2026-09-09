@@ -13,7 +13,7 @@ import {
   reprocessRecord,
   updateRecord,
 } from '@/redux/slices/recordsSlice'
-import type { MedicalRecord, Medication, RecordType } from '@/types'
+import type { MedicalRecord, MedicationTable as MedicationTableData, RecordType } from '@/types'
 
 interface FormState {
   type: RecordType
@@ -21,7 +21,7 @@ interface FormState {
   doctor: string
   visitDate: string
   diagnosis: string
-  medications: Medication[]
+  medicationTable: MedicationTableData
   notes: string
 }
 
@@ -32,7 +32,7 @@ function toForm(r: MedicalRecord): FormState {
     doctor: r.doctor ?? '',
     visitDate: r.visitDate ?? '',
     diagnosis: r.diagnosis ?? '',
-    medications: r.medications,
+    medicationTable: r.medicationTable,
     notes: r.notes ?? '',
   }
 }
@@ -74,9 +74,10 @@ export function RecordDetailPage() {
   const save = async (confirm: boolean, e?: FormEvent) => {
     e?.preventDefault()
     if (!current_) return
-    const meds = current_.medications
-      .map((m) => ({ ...m, name: m.name.trim() }))
-      .filter((m) => m.name)
+    // Bỏ dòng trống hoàn toàn
+    const rows = current_.medicationTable.rows.filter((r) =>
+      Object.values(r).some((v) => v && v.trim()),
+    )
     const result = await dispatch(
       updateRecord({
         id,
@@ -85,7 +86,7 @@ export function RecordDetailPage() {
           doctor: current_.doctor.trim() || null,
           visitDate: current_.visitDate || null,
           diagnosis: current_.diagnosis.trim() || null,
-          medications: meds,
+          medicationTable: { columns: current_.medicationTable.columns, rows },
           notes: current_.notes.trim() || null,
           confirm,
         },
@@ -274,8 +275,8 @@ export function RecordDetailPage() {
           <div className="space-y-1.5">
             <span className="font-heading text-primary block text-sm font-semibold">Thuốc</span>
             <MedicationTable
-              value={current_.medications}
-              onChange={(medications) => patch({ medications })}
+              value={current_.medicationTable}
+              onChange={(medicationTable) => patch({ medicationTable })}
               disabled={saving}
             />
           </div>

@@ -29,6 +29,16 @@ const medicationSchema = z.object({
   instructions: optionalText(300),
 })
 
+const tableColumnSchema = z.object({
+  key: z.string().trim().min(1).max(40),
+  label: z.string().trim().min(1).max(80),
+})
+
+export const medicationTableSchema = z.object({
+  columns: z.array(tableColumnSchema).max(8),
+  rows: z.array(z.record(z.string(), z.string().trim().max(300).nullable())).max(30),
+})
+
 export const uploadRecordSchema = z.object({
   body: z.object({
     /** Gợi ý loại tài liệu (tùy chọn), AI vẫn tự nhận dạng */
@@ -65,6 +75,8 @@ export const updateRecordSchema = z.object({
     visitDate: dateSchema,
     diagnosis: optionalText(1000),
     medications: z.array(medicationSchema).max(30).optional(),
+    /** Bảng thuốc theo cột tài liệu; khi gửi, backend suy ra medications chuẩn hóa từ bảng */
+    medicationTable: medicationTableSchema.optional(),
     notes: optionalText(2000),
     /** true = đánh dấu đã xác nhận (status done) */
     confirm: z.boolean().optional(),

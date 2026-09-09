@@ -13,6 +13,12 @@ export interface Medication {
   instructions: string | null
 }
 
+/** Bảng thuốc đúng theo cột của tài liệu (mỗi bệnh viện in khác nhau) */
+export interface MedicationTable {
+  columns: Array<{ key: string; label: string }>
+  rows: Array<Record<string, string | null>>
+}
+
 /** Hồ sơ bệnh án / đơn thuốc từ GET /records */
 export interface MedicalRecord {
   id: string
@@ -23,7 +29,9 @@ export interface MedicalRecord {
   /** yyyy-mm-dd */
   visitDate: string | null
   diagnosis: string | null
+  /** Bản chuẩn hóa (đếm, ngữ cảnh chat); hiển thị và sửa dùng medicationTable */
   medications: Medication[]
+  medicationTable: MedicationTable
   notes: string | null
   rawText: string | null
   confidence: number | null

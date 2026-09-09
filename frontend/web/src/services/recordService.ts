@@ -1,5 +1,5 @@
 import { axiosClient, ENDPOINTS } from '@/api'
-import type { ApiResponse, MedicalRecord, Medication, RecordType } from '@/types'
+import type { ApiResponse, MedicalRecord, MedicationTable, RecordType } from '@/types'
 
 export interface ListRecordsParams {
   year?: number
@@ -14,7 +14,8 @@ export interface UpdateRecordPayload {
   doctor?: string | null
   visitDate?: string | null
   diagnosis?: string | null
-  medications?: Medication[]
+  /** Bảng thuốc theo cột tài liệu; backend tự suy ra medications chuẩn hóa */
+  medicationTable?: MedicationTable
   notes?: string | null
   confirm?: boolean
 }

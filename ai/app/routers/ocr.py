@@ -1,6 +1,8 @@
 """POST /ocr — OCR + bóc tách bệnh án/đơn thuốc in máy bằng LLM đa phương thức (một bước)."""
 
+import re
 import time
+import unicodedata
 
 from fastapi import APIRouter, HTTPException
 from fastapi.concurrency import run_in_threadpool
@@ -20,6 +22,50 @@ def _clean_str(v: object) -> str | None:
         return None
     s = str(v).strip()
     return s or None
+
+
+def _slug(label: str, used: set[str]) -> str:
+    base = unicodedata.normalize("NFKD", label).encode("ascii", "ignore").decode()
+    base = re.sub(r"[^a-z0-9]+", "_", base.lower()).strip("_") or "col"
+    key, n = base, 2
+    while key in used:
+        key, n = f"{base}_{n}", n + 1
+    used.add(key)
+    return key
+
+
+def _normalize_table(raw_table: object) -> dict:
+    """Ép bảng thuốc về {columns:[{key,label}], rows:[{key: value}]} với key duy nhất, tối đa 8 cột / 30 dòng."""
+    if not isinstance(raw_table, dict):
+        return {"columns": [], "rows": []}
+    used: set[str] = set()
+    columns: list[dict] = []
+    key_by_src: dict[str, str] = {}
+    for c in raw_table.get("columns") or []:
+        label = _clean_str(c.get("label") if isinstance(c, dict) else c)
+        if not label:
+            continue
+        src_key = str(c.get("key") if isinstance(c, dict) and c.get("key") else label)
+        key = _slug(label, used)
+        key_by_src[src_key] = key
+        key_by_src[label] = key
+        columns.append({"key": key, "label": label})
+        if len(columns) >= 8:
+            break
+    rows: list[dict] = []
+    for r in raw_table.get("rows") or []:
+        if not isinstance(r, dict):
+            continue
+        row = {c["key"]: None for c in columns}
+        for k, v in r.items():
+            key = key_by_src.get(str(k))
+            if key:
+                row[key] = _clean_str(v)
+        if any(row.values()):
+            rows.append(row)
+        if len(rows) >= 30:
+            break
+    return {"columns": columns, "rows": rows}
 
 
 def _normalize(raw: dict) -> dict:
@@ -49,6 +95,7 @@ def _normalize(raw: dict) -> dict:
         "visit_date": _clean_str(raw.get("visit_date")),
         "diagnosis": _clean_str(raw.get("diagnosis")),
         "medications": meds[:30],
+        "medication_table": _normalize_table(raw.get("medication_table")),
         "notes": _clean_str(raw.get("notes")),
         "raw_text": str(raw.get("raw_text") or "").strip(),
         "confidence": min(max(confidence, 0.0), 1.0),
