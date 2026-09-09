@@ -24,6 +24,9 @@ class Medication(BaseModel):
     name: str
     dose: str | None = None
     frequency: str | None = None
+    # Tổng số lượng cấp (vd: 21 viên)
+    quantity: str | None = None
+    # Số ngày dùng (vd: 7 ngày)
     duration: str | None = None
     instructions: str | None = None
 

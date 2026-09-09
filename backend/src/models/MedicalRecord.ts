@@ -12,6 +12,7 @@ const medicationSchema = new Schema(
     name: { type: String, required: true, trim: true },
     dose: { type: String, trim: true },
     frequency: { type: String, trim: true },
+    quantity: { type: String, trim: true },
     duration: { type: String, trim: true },
     instructions: { type: String, trim: true },
   },

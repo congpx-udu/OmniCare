@@ -6,6 +6,9 @@ export interface Medication {
   name: string
   dose: string | null
   frequency: string | null
+  /** Tổng số lượng cấp, ví dụ 21 viên */
+  quantity: string | null
+  /** Số ngày dùng, ví dụ 7 ngày */
   duration: string | null
   instructions: string | null
 }

@@ -1,17 +1,11 @@
 import { useId, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { Button } from '@/components/common'
-import {
-  RECORD_IMAGE_MAX_MB,
-  RECORD_IMAGE_TYPES,
-  RECORD_MAX_PAGES,
-  RECORD_TYPE_LABELS,
-} from '@/constants'
-import type { RecordType } from '@/types'
+import { RECORD_IMAGE_MAX_MB, RECORD_IMAGE_TYPES, RECORD_MAX_PAGES } from '@/constants'
 import { cn } from '@/utils'
 
 interface UploadDropzoneProps {
   uploading?: boolean
-  onUpload: (files: File[], type?: RecordType) => void
+  onUpload: (files: File[]) => void
 }
 
 interface Picked {
@@ -24,7 +18,6 @@ export function UploadDropzone({ uploading = false, onUpload }: UploadDropzonePr
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [pages, setPages] = useState<Picked[]>([])
-  const [type, setType] = useState<RecordType | ''>('')
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
 
@@ -80,11 +73,7 @@ export function UploadDropzone({ uploading = false, onUpload }: UploadDropzonePr
   }
 
   const submit = () => {
-    if (pages.length)
-      onUpload(
-        pages.map((p) => p.file),
-        type || undefined,
-      )
+    if (pages.length) onUpload(pages.map((p) => p.file))
   }
 
   const dropArea = (
@@ -204,28 +193,6 @@ export function UploadDropzone({ uploading = false, onUpload }: UploadDropzonePr
 
       {pages.length > 0 && (
         <div className="space-y-3">
-          <div className="space-y-1.5">
-            <span className="font-heading text-primary block text-sm font-semibold">
-              Loại tài liệu (tùy chọn, AI vẫn tự nhận dạng)
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(RECORD_TYPE_LABELS) as RecordType[]).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setType(type === t ? '' : t)}
-                  className={cn(
-                    'rounded-full border px-3 py-1 text-xs transition',
-                    type === t
-                      ? 'border-primary bg-primary text-white'
-                      : 'hover:border-primary border-neutral-300 text-neutral-700',
-                  )}
-                >
-                  {RECORD_TYPE_LABELS[t]}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={submit} loading={uploading}>
               Đọc {pages.length > 1 ? `${pages.length} trang` : ''} bằng AI

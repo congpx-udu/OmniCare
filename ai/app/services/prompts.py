@@ -140,7 +140,7 @@ Trả lời CHỈ bằng JSON hợp lệ theo schema:
   "visit_date": "ngày khám/kê đơn dạng yyyy-mm-dd hoặc null",
   "diagnosis": "chẩn đoán đầy đủ như trong ảnh hoặc null",
   "medications": [
-    {"name": "tên thuốc + hàm lượng nếu có", "dose": "liều mỗi lần (vd: 1 viên)", "frequency": "số lần/ngày, thời điểm (vd: 2 lần/ngày sáng-tối)", "duration": "số ngày hoặc số lượng (vd: 7 ngày, 14 viên)", "instructions": "lưu ý dùng thuốc hoặc null"}
+    {"name": "tên thuốc + hàm lượng nếu có", "dose": "liều mỗi lần (vd: 1 viên)", "frequency": "số lần/ngày, thời điểm (vd: 2 lần/ngày sáng-tối)", "quantity": "tổng số lượng cấp trong đơn, đúng đơn vị (vd: 21 viên, 2 lọ) hoặc null", "duration": "số ngày dùng (vd: 7 ngày) hoặc null, KHÔNG ghi số lượng vào đây", "instructions": "lưu ý dùng thuốc hoặc null"}
   ],
   "notes": "lời dặn của bác sĩ, ngày tái khám hoặc null",
   "raw_text": "toàn bộ chữ đọc được, mỗi dòng cách nhau bằng \n, theo thứ tự trong ảnh",

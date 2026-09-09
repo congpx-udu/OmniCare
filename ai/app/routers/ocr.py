@@ -32,6 +32,7 @@ def _normalize(raw: dict) -> dict:
                 "name": _clean_str(m.get("name")),
                 "dose": _clean_str(m.get("dose")),
                 "frequency": _clean_str(m.get("frequency")),
+                "quantity": _clean_str(m.get("quantity")),
                 "duration": _clean_str(m.get("duration")),
                 "instructions": _clean_str(m.get("instructions")),
             }

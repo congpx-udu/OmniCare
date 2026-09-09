@@ -81,7 +81,6 @@ export function RecordDetailPage() {
       updateRecord({
         id,
         payload: {
-          type: current_.type,
           facility: current_.facility.trim() || null,
           doctor: current_.doctor.trim() || null,
           visitDate: current_.visitDate || null,
@@ -138,6 +137,11 @@ export function RecordDetailPage() {
             ← Hồ sơ bệnh án
           </Link>
           <h1 className="mt-1 text-2xl">{record.diagnosis ?? RECORD_TYPE_LABELS[record.type]}</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            {RECORD_TYPE_LABELS[record.type]}
+            {record.medications.length > 0 ? ` · ${record.medications.length} thuốc` : ''}
+            {pageCount > 1 ? ` · ${pageCount} trang` : ''}
+          </p>
         </div>
         <StatusBadge status={record.status} />
       </div>
@@ -222,28 +226,6 @@ export function RecordDetailPage() {
         {/* Dữ liệu bóc tách */}
         <form onSubmit={(e) => void save(true, e)} noValidate className="min-w-0 space-y-4">
           <fieldset disabled={saving} className="min-w-0 space-y-4">
-            <div className="space-y-1.5">
-              <span className="font-heading text-primary block text-sm font-semibold">
-                Loại tài liệu
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {(Object.keys(RECORD_TYPE_LABELS) as RecordType[]).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => patch({ type: t })}
-                    className={
-                      current_.type === t
-                        ? 'border-primary bg-primary rounded-full border px-3 py-1 text-xs text-white'
-                        : 'hover:border-primary rounded-full border border-neutral-300 px-3 py-1 text-xs text-neutral-700'
-                    }
-                  >
-                    {RECORD_TYPE_LABELS[t]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
                 label="Cơ sở y tế"
@@ -277,62 +259,71 @@ export function RecordDetailPage() {
                 className="bg-surface focus:border-tertiary focus:ring-tertiary/40 w-full rounded-lg border border-neutral-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:outline-none"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <span className="font-heading text-primary block text-sm font-semibold">Thuốc</span>
-              <MedicationTable
-                value={current_.medications}
-                onChange={(medications) => patch({ medications })}
-                disabled={saving}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label
-                htmlFor="notes"
-                className="font-heading text-primary block text-sm font-semibold"
-              >
-                Lời dặn / ghi chú
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows={3}
-                value={current_.notes}
-                onChange={onChange}
-                className="bg-surface focus:border-tertiary focus:ring-tertiary/40 w-full rounded-lg border border-neutral-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:outline-none"
-              />
-            </div>
           </fieldset>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" size="lg" loading={saving}>
-              Xác nhận & lưu
-            </Button>
-            {dirty && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void save(false)}
-                disabled={saving}
-              >
-                Lưu nháp
-              </Button>
-            )}
-            <Button type="button" variant="ghost" onClick={reprocess} disabled={saving}>
-              Đọc lại bằng AI
-            </Button>
-            <button
-              type="button"
-              onClick={remove}
-              disabled={saving}
-              className="text-danger ml-auto text-sm hover:underline disabled:opacity-50"
-            >
-              Xóa hồ sơ
-            </button>
-          </div>
         </form>
       </div>
+
+      {/* Thuốc và lời dặn: toàn chiều rộng để bảng thuốc đọc rõ từng cột */}
+      <form
+        onSubmit={(e) => void save(true, e)}
+        noValidate
+        className="min-w-0 space-y-4"
+        aria-label="Thuốc và lời dặn"
+      >
+        <fieldset disabled={saving} className="min-w-0 space-y-4">
+          <div className="space-y-1.5">
+            <span className="font-heading text-primary block text-sm font-semibold">Thuốc</span>
+            <MedicationTable
+              value={current_.medications}
+              onChange={(medications) => patch({ medications })}
+              disabled={saving}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="notes"
+              className="font-heading text-primary block text-sm font-semibold"
+            >
+              Lời dặn / ghi chú
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              value={current_.notes}
+              onChange={onChange}
+              className="bg-surface focus:border-tertiary focus:ring-tertiary/40 w-full rounded-lg border border-neutral-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:outline-none"
+            />
+          </div>
+        </fieldset>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" size="lg" loading={saving}>
+            Xác nhận & lưu
+          </Button>
+          {dirty && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void save(false)}
+              disabled={saving}
+            >
+              Lưu nháp
+            </Button>
+          )}
+          <Button type="button" variant="ghost" onClick={reprocess} disabled={saving}>
+            Đọc lại bằng AI
+          </Button>
+          <button
+            type="button"
+            onClick={remove}
+            disabled={saving}
+            className="text-danger ml-auto text-sm hover:underline disabled:opacity-50"
+          >
+            Xóa hồ sơ
+          </button>
+        </div>
+      </form>
 
       {record.rawText && (
         <details className="rounded-card bg-surface border border-neutral-200 p-4">

@@ -20,6 +20,7 @@ const medicationSchema = z.object({
   name: z.string(),
   dose: z.string().nullable().default(null),
   frequency: z.string().nullable().default(null),
+  quantity: z.string().nullable().default(null),
   duration: z.string().nullable().default(null),
   instructions: z.string().nullable().default(null),
 })
@@ -46,6 +47,7 @@ export interface PublicMedication {
   name: string
   dose: string | null
   frequency: string | null
+  quantity: string | null
   duration: string | null
   instructions: string | null
 }
@@ -103,6 +105,7 @@ function toPublic(r: RecordSource): PublicRecord {
       name: m.name,
       dose: m.dose ?? null,
       frequency: m.frequency ?? null,
+      quantity: m.quantity ?? null,
       duration: m.duration ?? null,
       instructions: m.instructions ?? null,
     })),

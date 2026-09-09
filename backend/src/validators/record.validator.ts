@@ -24,6 +24,7 @@ const medicationSchema = z.object({
   name: z.string().trim().min(1, 'Tên thuốc không được trống').max(200),
   dose: optionalText(100),
   frequency: optionalText(150),
+  quantity: optionalText(100),
   duration: optionalText(100),
   instructions: optionalText(300),
 })

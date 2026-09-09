@@ -5,7 +5,6 @@ import { RecordCard, UploadDropzone } from '@/components/records'
 import { ROUTES } from '@/constants'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { clearRecordErrors, fetchRecords, uploadRecord } from '@/redux/slices/recordsSlice'
-import type { RecordType } from '@/types'
 
 /** Hồ sơ bệnh án (DM-01, DM-02): upload ảnh in máy → AI đọc → timeline theo ngày khám */
 export function RecordsPage() {
@@ -40,8 +39,8 @@ export function RecordsPage() {
     })
   }, [items, q, year])
 
-  const onUpload = async (files: File[], type?: RecordType) => {
-    const result = await dispatch(uploadRecord({ files, type }))
+  const onUpload = async (files: File[]) => {
+    const result = await dispatch(uploadRecord({ files }))
     if (uploadRecord.fulfilled.match(result)) {
       navigate(ROUTES.RECORD_DETAIL.replace(':id', result.payload.id))
     }
