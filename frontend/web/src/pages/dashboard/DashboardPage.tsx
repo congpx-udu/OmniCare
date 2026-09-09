@@ -1,7 +1,10 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { MedicalDisclaimer } from '@/components/common'
+import { Alert, MedicalDisclaimer } from '@/components/common'
 import { ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
+import { fetchProfile } from '@/redux/slices/profileSlice'
 
 const SHORTCUTS = [
   {
@@ -27,6 +30,14 @@ const SHORTCUTS = [
 /** Trang đầu tiên sau đăng nhập. Giai đoạn 5 sẽ thêm nhắc thuốc, chỉ số, cảnh báo thời tiết. */
 export function DashboardPage() {
   const { user } = useAuth()
+  const dispatch = useAppDispatch()
+  const { profile, status } = useAppSelector((s) => s.profile)
+
+  useEffect(() => {
+    if (status === 'idle') void dispatch(fetchProfile())
+  }, [dispatch, status])
+
+  const needsProfile = profile !== null && !profile.isComplete
   return (
     <section className="space-y-8">
       <div className="space-y-2">
@@ -35,6 +46,16 @@ export function DashboardPage() {
           Trợ lý sức khỏe của bạn đã sẵn sàng. Chọn một tính năng để bắt đầu.
         </p>
       </div>
+
+      {needsProfile && (
+        <Alert variant="warning">
+          Hồ sơ sức khỏe của bạn chưa đủ chiều cao, cân nặng và ngày sinh.{' '}
+          <Link to={ROUTES.PROFILE} className="font-semibold underline">
+            Hoàn thiện ngay
+          </Link>{' '}
+          để trợ lý AI đưa ra gợi ý sát với thể trạng của bạn.
+        </Alert>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         {SHORTCUTS.map((s) => (

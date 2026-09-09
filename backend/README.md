@@ -89,7 +89,8 @@ src/
 │   └── logger.ts             pino, redact authorization/password/token
 ├── routes/
 │   ├── index.ts              apiRouter: /health, /auth, ...
-│   └── auth.routes.ts        POST /register, POST /login, GET /me
+│   ├── auth.routes.ts        POST /register, POST /login, GET /me
+│   └── profile.routes.ts     GET /, PUT / (hồ sơ sức khỏe)
 ├── controllers/
 │   ├── auth.controller.ts    Nhận req, gọi service, trả ok()/created()
 │   └── health.controller.ts  Health check + trạng thái DB
@@ -150,7 +151,8 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | GET 🔒 | `/chat/history` | Lịch sử chat | ⏳ |
 | POST 🔒 | `/ocr/upload` | Upload ảnh đơn thuốc (multipart `image`) | ⏳ |
 | GET 🔒 | `/ocr/:id` | Kết quả OCR đã bóc tách | ⏳ |
-| GET/PUT 🔒 | `/profile` | Hồ sơ sức khỏe | ⏳ |
+| GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
+| PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
 | GET 🔒 | `/context/weather?lat=&lng=` | Thời tiết hiện tại tại vị trí | ⏳ |
 
 ### Định dạng response

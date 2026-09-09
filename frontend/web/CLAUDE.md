@@ -32,17 +32,17 @@ Trước khi báo hoàn thành: `npm run typecheck` và `npm run lint` phải s�
 | Thư mục / file | Chứa gì | Ví dụ hiện có |
 |---|---|---|
 | `src/api/` | Tầng HTTP thô. `axiosClient.ts` (instance + interceptor gắn JWT, xử lý 401), `endpoints.ts` (hằng đường dẫn API). **Không** chứa logic nghiệp vụ. | `axiosClient.ts`, `endpoints.ts` |
-| `src/services/` | Hàm gọi API theo nghiệp vụ, mỗi domain một file `xxxService.ts`. Dùng `axiosClient` + `ENDPOINTS`. Trả về dữ liệu đã có kiểu. | `authService.ts` |
-| `src/redux/` | State toàn cục. `store.ts` cấu hình store, `hooks.ts` (`useAppDispatch`, `useAppSelector` đã typed), `slices/xxxSlice.ts` mỗi domain một slice. | `slices/authSlice.ts` |
+| `src/services/` | Hàm gọi API theo nghiệp vụ, mỗi domain một file `xxxService.ts`. Dùng `axiosClient` + `ENDPOINTS`. Trả về dữ liệu đã có kiểu. | `authService.ts`, `profileService.ts` |
+| `src/redux/` | State toàn cục. `store.ts` cấu hình store, `hooks.ts` (`useAppDispatch`, `useAppSelector` đã typed), `slices/xxxSlice.ts` mỗi domain một slice. | `slices/authSlice.ts`, `slices/profileSlice.ts` |
 | `src/context/` | React Context cho state ít thay đổi (theme, cấu hình UI). Tách **định nghĩa context** (`xxxContext.ts`) và **Provider** (`XxxProvider.tsx`) thành 2 file để Fast Refresh hoạt động. | `themeContext.ts`, `ThemeProvider.tsx` |
 | `src/hooks/` | Custom hook dùng chung, file `useXxx.ts`. Hook đọc context cũng đặt ở đây. | `useAuth.ts`, `useTheme.ts`, `useGeolocation.ts` |
 | `src/pages/` | Mỗi route một component trang, nhóm theo domain: `auth/`, `chat/`, `ocr/`, `health-profile/`, `dashboard/`. Tên file `XxxPage.tsx`. Trang chỉ ghép component và gọi hook, không chứa logic phức tạp. | `chat/ChatPage.tsx`, `NotFoundPage.tsx` |
 | `src/layouts/` | Khung bọc ngoài trang, có `<Outlet />`. | `LandingLayout.tsx` (menu ngang, công khai), `AuthLayout.tsx`, `AppLayout.tsx` (sidebar trái, sau đăng nhập) |
 | `src/components/common/` | Component UI thuần, tái sử dụng, không gọi API. | `Button.tsx`, `Input.tsx`, `Alert.tsx`, `Logo.tsx`, `MedicalDisclaimer.tsx` |
-| `src/components/<domain>/` | Component riêng của một domain (ví dụ `chat/MessageBubble.tsx`, `ocr/UploadDropzone.tsx`). Tạo thư mục khi cần. | `auth/RequireAuth.tsx`, `auth/PasswordToggle.tsx`, `layout/Sidebar.tsx`, `layout/NavIcon.tsx`, `landing/*` (MaskedCard, HeroSection, ...) |
+| `src/components/<domain>/` | Component riêng của một domain (ví dụ `chat/MessageBubble.tsx`, `ocr/UploadDropzone.tsx`). Tạo thư mục khi cần. | `auth/RequireAuth.tsx`, `auth/PasswordToggle.tsx`, `health-profile/TagInput.tsx`, `health-profile/ProfileSummary.tsx`, `layout/Sidebar.tsx`, `layout/NavIcon.tsx`, `landing/*` (MaskedCard, HeroSection, ...) |
 | `src/constants/` | Hằng số: `routes.ts` (đường dẫn route), `nav.ts` (`APP_NAV` sidebar, `LANDING_NAV` menu ngang), `storage.ts` (key localStorage), `app.ts` (tên app, disclaimer). Export gom qua `index.ts`. | `routes.ts`, `nav.ts`, `storage.ts`, `app.ts` |
 | `src/types/` | Interface/type dùng chung nhiều nơi. Type chỉ dùng trong một service thì để cạnh service đó. | `user.ts`, `api.ts` |
-| `src/validators/` | Zod schema cho form, export kèm `z.infer` type. | `auth.ts` |
+| `src/validators/` | Zod schema cho form, export kèm `z.infer` type. | `auth.ts`, `profile.ts` |
 | `src/utils/` | Hàm thuần không phụ thuộc React. | `cn.ts`, `formatDate.ts`, `apiError.ts` |
 | `src/assets/` | Ảnh, icon, font. Import trực tiếp trong component. | `hero.png` |
 | `src/routes.tsx` | Khai báo toàn bộ route bằng `createBrowserRouter`, dùng hằng từ `constants/routes.ts`. | |
