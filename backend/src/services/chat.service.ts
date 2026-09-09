@@ -9,7 +9,8 @@ import { getProfile } from './profile.service.js'
 
 /** Số tin gần nhất (cả hai vai) gửi kèm cho AI để giữ mạch hội thoại */
 const HISTORY_FOR_AI = 10
-const AI_TIMEOUT_MS = 30_000
+/** Phải lớn hơn LLM_TIMEOUT × 2 (AI service thử lại 1 lần) */
+const AI_TIMEOUT_MS = 70_000
 
 // ---------- Schema response của AI service (validate trước khi dùng) ----------
 

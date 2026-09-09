@@ -18,7 +18,7 @@ class Settings:
     llm_base_url: str = os.getenv("LLM_BASE_URL", "https://open.bigmodel.cn/api/paas/v4").rstrip("/")
     llm_model: str = os.getenv("LLM_MODEL", "glm-4.7")
     llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "20"))
-    llm_max_tokens: int = int(os.getenv("LLM_MAX_TOKENS", "1200"))
+    llm_max_tokens: int = int(os.getenv("LLM_MAX_TOKENS", "2000"))
 
     # Disclaimer bắt buộc kèm mọi response chat/gợi ý (yêu cầu AI-04)
     medical_disclaimer: str = (

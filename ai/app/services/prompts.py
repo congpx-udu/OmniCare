@@ -19,7 +19,7 @@ _FOOD_SCHEMA = """Schema JSON:
   "activities": ["1-3 gợi ý vận động ngắn hợp thời tiết, có thể rỗng"],
   "follow_up_questions": ["0-2 câu hỏi ngắn để gợi ý sát hơn"]
 }
-Yêu cầu: 2-4 món ăn phổ biến, dễ tìm ở Việt Nam, ưu tiên món địa phương nếu biết vị trí. TUYỆT ĐỐI tránh nguyên liệu người dùng dị ứng. Cân nhắc bệnh nền (ví dụ tiểu đường: ít đường tinh luyện; tăng huyết áp: ít muối). Nắng nóng: món mát, nhiều nước; lạnh/mưa: món ấm."""
+Yêu cầu: 2-4 món ăn phổ biến, dễ tìm ở Việt Nam, ưu tiên món địa phương nếu biết vị trí. TUYỆT ĐỐI tránh nguyên liệu người dùng dị ứng, kể cả dạng phái sinh (ví dụ dị ứng hải sản thì tránh cả mắm tôm, mắm ruốc, mắm tép, nước mắm cá, ruốc khô; dị ứng sữa thì tránh phô mai, bơ, kem; dị ứng đậu phộng thì tránh dầu lạc, tương lạc). Nếu món có nước chấm hoặc gia vị chứa chất gây dị ứng thì phải đề xuất thay thế rõ ràng trong notes. Cân nhắc bệnh nền (ví dụ tiểu đường: ít đường tinh luyện; tăng huyết áp: ít muối). Nắng nóng: món mát, nhiều nước; lạnh/mưa: món ấm."""
 
 _SYMPTOM_SCHEMA = """Schema JSON:
 {

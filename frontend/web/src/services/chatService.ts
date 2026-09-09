@@ -15,7 +15,7 @@ export interface SendChatPayload {
 }
 
 /** Chat gọi LLM mất vài giây; timeout riêng dài hơn mặc định 10s của axiosClient */
-const CHAT_TIMEOUT_MS = 40_000
+const CHAT_TIMEOUT_MS = 75_000
 
 export const chatService = {
   send: (payload: SendChatPayload) =>

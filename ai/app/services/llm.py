@@ -29,10 +29,16 @@ class LLMNotConfigured(LLMError):
 
 
 def _extra_params() -> dict[str, Any]:
-    """Tham số riêng theo nhà cung cấp. GLM 4.5+ bật 'thinking' mặc định làm chậm, tắt để giữ NFR-03."""
+    """Tham số riêng theo nhà cung cấp, để giữ NFR-03 (trả lời ≤ 5s) và không cắt JSON.
+
+    - GLM 4.5+: 'thinking' bật mặc định → tắt.
+    - Gemini (OpenAI-compatible): thinking mặc định ngốn max_tokens làm JSON bị cắt → reasoning_effort=low.
+    """
     host = settings.llm_base_url
     if "bigmodel.cn" in host or "z.ai" in host:
         return {"thinking": {"type": "disabled"}}
+    if "googleapis.com" in host:
+        return {"reasoning_effort": "low"}
     return {}
 
 
