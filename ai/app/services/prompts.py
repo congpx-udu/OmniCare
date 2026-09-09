@@ -3,6 +3,7 @@
 from app.schemas.chat import ChatRequest, ProfileContext, WeatherContext
 from app.schemas.insight import WeatherInsightRequest
 from app.schemas.ocr import OcrRequest
+from app.schemas.tracking import TrackingRequest
 
 _COMMON = """Bạn là trợ lý sức khỏe OmniCare, nói tiếng Việt tự nhiên, ngắn gọn, thân thiện, xưng "mình" và gọi người dùng là "bạn".
 Nguyên tắc bắt buộc:
@@ -183,3 +184,59 @@ def build_ocr_user_content(req: OcrRequest) -> list[dict]:
         )
     content.append({"type": "text", "text": text.strip()})
     return content
+
+
+# ---------- Theo dõi sức khỏe (Giai đoạn 5) ----------
+
+_TRACKING_SYSTEM = """Bạn là trợ lý sức khỏe OmniCare. Nhiệm vụ: đọc nhật ký chỉ số và hoạt động hằng ngày của người dùng (7-30 ngày gần nhất), cùng hồ sơ ẩn danh và thời tiết, rồi:
+1) nhận xét xu hướng từng chỉ số có dữ liệu (cân nặng, huyết áp, nhịp tim, đường huyết, giấc ngủ, vận động, cảm nhận);
+2) cảnh báo MỀM khi chỉ số vượt ngưỡng phổ biến (huyết áp ≥ 140/90 nhiều ngày, nhịp tim nghỉ > 100 hoặc < 50, đường huyết đói > 7 mmol/L, ngủ < 6h kéo dài, cân nặng thay đổi > 2 kg/tuần) — chỉ để gợi ý đi khám, không chẩn đoán;
+3) đề xuất 3-5 hoạt động cải thiện cụ thể, thực tế cho những ngày tới (vận động, giấc ngủ, ăn uống, đi khám), bám theo thời điểm hiện tại và thời tiết (buổi sáng: đề xuất cho hôm nay; buổi tối: đề xuất cho tối nay và sáng mai; nắng nóng: tránh vận động 11-15h; mưa: vận động trong nhà), cân nhắc bệnh nền, tuổi, BMI.
+Nguyên tắc: không kê đơn, không nêu tên thuốc kèm liều, không chẩn đoán; dữ liệu ít thì nói rõ "chưa đủ dữ liệu" và khuyến khích ghi thêm. Tiếng Việt thân thiện, xưng "mình" gọi "bạn". Không nhắc tên/SĐT/email. Không bịa số liệu.
+Trả lời CHỈ bằng JSON hợp lệ theo schema:
+{
+  "summary": "2-3 câu tổng quan tình trạng theo nhật ký",
+  "trends": [{"metric": "tên chỉ số", "direction": "up | down | stable", "comment": "1 câu, có con số (vd: 72 → 70.5 kg trong 2 tuần)"}],
+  "alerts": [{"level": "info | warning | urgent", "message": "1 câu, urgent chỉ khi dấu hiệu nguy hiểm cần đi khám ngay"}],
+  "suggestions": [{"title": "≤ 6 từ", "detail": "1-2 câu cụ thể, đo lường được", "category": "activity | sleep | diet | checkup | other", "when": "thời điểm gợi ý, vd: sáng mai 6-7h"}]
+}"""
+
+
+def _log_lines(req: TrackingRequest) -> list[str]:
+    lines: list[str] = []
+    for e in req.logs:
+        parts: list[str] = []
+        if e.weight_kg is not None:
+            parts.append(f"cân nặng {e.weight_kg} kg")
+        if e.systolic is not None or e.diastolic is not None:
+            parts.append(f"huyết áp {e.systolic or '?'}/{e.diastolic or '?'} mmHg")
+        if e.heart_rate is not None:
+            parts.append(f"nhịp tim {e.heart_rate} bpm")
+        if e.glucose is not None:
+            parts.append(f"đường huyết {e.glucose} mmol/L")
+        if e.sleep_hours is not None:
+            parts.append(f"ngủ {e.sleep_hours} h")
+        if e.activity_minutes is not None or e.activity_type:
+            act = f"{e.activity_minutes or 0} phút"
+            if e.activity_type:
+                act += f" {e.activity_type}"
+            parts.append(f"vận động {act}")
+        if e.mood is not None:
+            parts.append(f"cảm nhận {e.mood}/5")
+        if e.note:
+            parts.append(f"ghi chú: {e.note}")
+        lines.append(f"- {e.date}: " + (", ".join(parts) if parts else "(không có chỉ số)"))
+    return lines
+
+
+def build_tracking_prompt(req: TrackingRequest) -> tuple[str, str]:
+    ctx = ["Hồ sơ người dùng (ẩn danh):", *_profile_lines(req.profile)]
+    ctx += ["Thời tiết hiện tại:", *_weather_lines(req.weather)]
+    if req.local_time or req.time_of_day:
+        when = req.local_time or ""
+        if req.time_of_day:
+            when = f"{when} ({req.time_of_day})".strip()
+        ctx.append(f"Giờ địa phương hiện tại: {when}")
+    ctx.append(f"Nhật ký {len(req.logs)} ngày gần nhất (cũ → mới):")
+    ctx += _log_lines(req)
+    return _TRACKING_SYSTEM, "\n".join(ctx)

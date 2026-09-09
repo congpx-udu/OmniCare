@@ -12,4 +12,6 @@ export const ROUTES = {
   RECORDS: '/records',
   RECORD_DETAIL: '/records/:id',
   PROFILE: '/profile',
+  /** Theo dõi sức khỏe: nhật ký chỉ số + phân tích AI */
+  TRACKING: '/tracking',
 } as const

@@ -9,5 +9,12 @@ export const ENDPOINTS = {
     REPROCESS: (id: string) => `/records/${id}/reprocess`,
   },
   PROFILE: { GET: '/profile', UPDATE: '/profile' },
+  TRACKING: {
+    LOGS: '/tracking/logs',
+    LOG: (date: string) => `/tracking/logs/${date}`,
+    ANALYZE: '/tracking/analyze',
+    ADVICE: '/tracking/advice',
+    SUGGESTION: (id: string, index: number) => `/tracking/advice/${id}/suggestions/${index}`,
+  },
   CONTEXT: { WEATHER: '/context/weather', WEATHER_INSIGHT: '/context/weather/insight' },
 } as const

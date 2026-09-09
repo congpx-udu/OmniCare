@@ -93,7 +93,8 @@ src/
 │   ├── profile.routes.ts     GET /, PUT / (hồ sơ sức khỏe)
 │   ├── context.routes.ts     GET /weather (thời tiết theo vị trí)
 │   ├── chat.routes.ts        POST /, GET/DELETE /history (chat AI hai luồng)
-│   └── record.routes.ts      /upload, /, /:id, /:id/image, /:id/reprocess (hồ sơ bệnh án)
+│   ├── record.routes.ts      /upload, /, /:id, /:id/image, /:id/reprocess (hồ sơ bệnh án)
+│   └── tracking.routes.ts    /logs, /analyze, /advice (theo dõi sức khỏe)
 ├── controllers/
 │   ├── auth.controller.ts    Nhận req, gọi service, trả ok()/created()
 │   └── health.controller.ts  Health check + trạng thái DB
@@ -161,6 +162,12 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
 | PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
 | GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |
+| GET 🔒 | `/tracking/logs?from=&to=&limit=` | Nhật ký sức khỏe (cũ → mới) | ✅ |
+| PUT 🔒 | `/tracking/logs/:date` | Upsert nhật ký một ngày `{ weightKg?, systolic?, diastolic?, heartRate?, glucose?, sleepHours?, activityMinutes?, activityType?, mood?(1-5), note? }`, null = xóa chỉ số | ✅ |
+| DELETE 🔒 | `/tracking/logs/:date` | Xóa nhật ký một ngày | ✅ |
+| POST 🔒 | `/tracking/analyze` | ⏱ chatLimiter. `{ days?=30, location? }` → AI phân tích nhật ký + hồ sơ + thời tiết + giờ: `{ summary, trends[], alerts[], suggestions[{title, detail, category, when, done}] }`, lưu HealthAdvice | ✅ |
+| GET 🔒 | `/tracking/advice?limit=` | Các lần phân tích gần nhất | ✅ |
+| PATCH 🔒 | `/tracking/advice/:id/suggestions/:index` | `{ done }` đánh dấu đề xuất đã làm | ✅ |
 | GET 🔒 | `/context/weather/insight?lat=&lon=` hoặc `?city=` | "Ảnh hưởng đến bạn": AI đọc thời tiết + hồ sơ + buổi trong ngày → `{ summary, tips[], mealIdea, activityIdea, timeOfDay, disclaimer }`. Cache 30 phút theo user/vị trí/buổi | ✅ |
 
 ### Định dạng response

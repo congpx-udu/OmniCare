@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchProfile } from '@/redux/slices/profileSlice'
 import { fetchRecords } from '@/redux/slices/recordsSlice'
+import { fetchAdvice } from '@/redux/slices/trackingSlice'
 import { fetchWeather } from '@/redux/slices/weatherSlice'
 import { RecordCard } from '@/components/records'
 import { WeatherSummaryCard } from '@/components/weather'
@@ -30,6 +31,12 @@ const SHORTCUTS = [
     accent: 'bg-tertiary',
   },
   {
+    to: ROUTES.TRACKING,
+    title: 'Theo dõi sức khỏe',
+    desc: 'Ghi chỉ số, hoạt động mỗi ngày; AI phân tích và đề xuất cải thiện.',
+    accent: 'bg-tertiary-700',
+  },
+  {
     to: ROUTES.PROFILE,
     title: 'Hồ sơ sức khỏe',
     desc: 'Chiều cao, cân nặng, bệnh nền, dị ứng để AI cá nhân hóa lời khuyên.',
@@ -44,6 +51,7 @@ export function DashboardPage() {
   const { profile, status } = useAppSelector((s) => s.profile)
   const weather = useAppSelector((s) => s.weather)
   const records = useAppSelector((s) => s.records)
+  const tracking = useAppSelector((s) => s.tracking)
 
   useEffect(() => {
     if (status === 'idle') void dispatch(fetchProfile())
@@ -60,6 +68,11 @@ export function DashboardPage() {
     if (records.listStatus === 'idle') void dispatch(fetchRecords({ limit: 3 }))
   }, [dispatch, records.listStatus])
 
+  useEffect(() => {
+    if (tracking.adviceStatus === 'idle') void dispatch(fetchAdvice())
+  }, [dispatch, tracking.adviceStatus])
+
+  const latestAdvice = tracking.advice[0] ?? null
   const latestRecord = records.items[0] ?? null
   const needsProfile = profile !== null && !profile.isComplete
   return (
@@ -87,7 +100,7 @@ export function DashboardPage() {
         insightSummary={weather.insight?.summary ?? null}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {SHORTCUTS.map((s) => (
           <Link
             key={s.to}
@@ -100,6 +113,27 @@ export function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {latestAdvice && (
+        <Link
+          to={ROUTES.TRACKING}
+          className="rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-5 transition hover:shadow-lg"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg">Nhật ký sức khỏe</h3>
+            <span className="bg-secondary-50 text-secondary-700 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+              {latestAdvice.suggestions.filter((s) => s.done).length}/
+              {latestAdvice.suggestions.length} đề xuất đã làm
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-neutral-700">{latestAdvice.summary}</p>
+          {latestAdvice.suggestions.find((s) => !s.done) && (
+            <p className="text-primary mt-2 text-sm font-semibold">
+              Tiếp theo: {latestAdvice.suggestions.find((s) => !s.done)!.title}
+            </p>
+          )}
+        </Link>
+      )}
 
       {latestRecord && (
         <div className="space-y-2">
