@@ -47,7 +47,8 @@ app/
 │   ├── health.py     GET /health
 │   ├── chat.py       POST /chat — hai luồng food / symptom, output JSON ép schema
 │   ├── insight.py    POST /insights/weather
-│   └── ocr.py        POST /ocr — ảnh base64 → JSON bệnh án/đơn thuốc (LLM vision, một bước) — "ảnh hưởng đến bạn" theo hồ sơ + giờ trong ngày
+│   ├── ocr.py        POST /ocr
+│   └── tracking.py   POST /insights/tracking — nhật ký 7-30 ngày → xu hướng, cảnh báo mềm, đề xuất theo thời điểm — ảnh base64 → JSON bệnh án/đơn thuốc (LLM vision, một bước) — "ảnh hưởng đến bạn" theo hồ sơ + giờ trong ngày
 ├── schemas/          chat.py, insight.py
 └── services/
     ├── llm.py        Client chat/completions (urllib), ép JSON, retry
@@ -63,6 +64,10 @@ Trả: `{ mode, reply, risk_level, possible_conditions[], suggested_specialty, f
 ## POST /insights/weather
 
 Body: `{ profile?, weather, forecast_note?, local_time?, time_of_day? }` → `{ summary, tips[{title, detail}], meal_idea, activity_idea, disclaimer, model, latency_ms }`. Gợi ý bữa ăn/vận động bám theo buổi trong ngày.
+
+## POST /insights/tracking
+
+Body: `{ profile?, weather?, local_time?, time_of_day?, logs: [{date, weight_kg, systolic, diastolic, heart_rate, glucose, sleep_hours, activity_minutes, activity_type, mood(1-5), note}] }` → `{ summary, trends[{metric, direction, comment}], alerts[{level, message}], suggestions[{title, detail, category, when}], disclaimer, model, latency_ms }`.
 
 ## POST /ocr
 

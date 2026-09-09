@@ -13,6 +13,7 @@ import { LandingPage } from '@/pages/landing/LandingPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RecordDetailPage } from '@/pages/records/RecordDetailPage'
 import { RecordsPage } from '@/pages/records/RecordsPage'
+import { TrackingPage } from '@/pages/tracking/TrackingPage'
 import { WeatherPage } from '@/pages/weather/WeatherPage'
 
 export const router = createBrowserRouter([
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
           { path: ROUTES.WEATHER, element: <WeatherPage /> },
           { path: ROUTES.RECORDS, element: <RecordsPage /> },
           { path: ROUTES.RECORD_DETAIL, element: <RecordDetailPage /> },
+          { path: ROUTES.TRACKING, element: <TrackingPage /> },
           { path: ROUTES.PROFILE, element: <ProfilePage /> },
         ],
       },
