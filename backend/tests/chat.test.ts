@@ -1,0 +1,62 @@
+import request from 'supertest'
+import { describe, expect, it } from 'vitest'
+import { auth, registerAndLogin } from './helpers.js'
+
+describe('chat', () => {
+  it('gửi tin, lưu cặp user/assistant theo luồng, có disclaimer, lịch sử tách riêng', async () => {
+    const { app, token } = await registerAndLogin()
+    const res = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'symptom', message: 'Tôi đau đầu', feeling: 'mệt' })
+      .expect(201)
+    expect(res.body.data.disclaimer).toBe('Test disclaimer')
+    expect(res.body.data.userMessage.role).toBe('user')
+    expect(res.body.data.assistantMessage.meta.riskLevel).toBe('home')
+    expect(res.body.data.assistantMessage.meta.suggestedSpecialty).toBe('Nội tổng quát')
+
+    await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'food', message: 'Tối nay ăn gì?' })
+      .expect(201)
+
+    const symptom = await request(app)
+      .get('/api/chat/history?mode=symptom')
+      .set(auth(token))
+      .expect(200)
+    expect(symptom.body.data).toHaveLength(2)
+    const food = await request(app).get('/api/chat/history?mode=food').set(auth(token)).expect(200)
+    expect(food.body.data).toHaveLength(2)
+    expect(food.body.data[1].meta.meals[0].name).toBe('Cháo gà')
+
+    await request(app).delete('/api/chat/history?mode=food').set(auth(token)).expect(200)
+    const after = await request(app).get('/api/chat/history?mode=food').set(auth(token)).expect(200)
+    expect(after.body.data).toHaveLength(0)
+  })
+
+  it('validate mode và message; user khác không thấy lịch sử', async () => {
+    const a = await registerAndLogin('A')
+    const b = await registerAndLogin('B')
+    await request(a.app)
+      .post('/api/chat')
+      .set(auth(a.token))
+      .send({ mode: 'x', message: 'hi' })
+      .expect(400)
+    await request(a.app)
+      .post('/api/chat')
+      .set(auth(a.token))
+      .send({ mode: 'food', message: '' })
+      .expect(400)
+    await request(a.app)
+      .post('/api/chat')
+      .set(auth(a.token))
+      .send({ mode: 'food', message: 'ăn gì' })
+      .expect(201)
+    const other = await request(b.app)
+      .get('/api/chat/history?mode=food')
+      .set(auth(b.token))
+      .expect(200)
+    expect(other.body.data).toHaveLength(0)
+  })
+})

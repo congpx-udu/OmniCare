@@ -8,6 +8,7 @@ import { fetchProfile } from '@/redux/slices/profileSlice'
 import { fetchRecords } from '@/redux/slices/recordsSlice'
 import { fetchAdvice } from '@/redux/slices/trackingSlice'
 import { fetchWeather } from '@/redux/slices/weatherSlice'
+import { BodyMetricsCard } from '@/components/health-profile'
 import { RecordCard } from '@/components/records'
 import { WeatherSummaryCard } from '@/components/weather'
 
@@ -94,11 +95,14 @@ export function DashboardPage() {
         </Alert>
       )}
 
-      <WeatherSummaryCard
-        data={weather.data}
-        loading={weather.status === 'loading'}
-        insightSummary={weather.insight?.summary ?? null}
-      />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <BodyMetricsCard profile={profile} />
+        <WeatherSummaryCard
+          data={weather.data}
+          loading={weather.status === 'loading'}
+          insightSummary={weather.insight?.summary ?? null}
+        />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {SHORTCUTS.map((s) => (

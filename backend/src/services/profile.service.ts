@@ -75,7 +75,7 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
   if (Object.keys($set).length) update.$set = $set
   if (Object.keys($unset).length) update.$unset = $unset
   const profile = await HealthProfile.findOneAndUpdate({ user: userId }, update, {
-    new: true,
+    returnDocument: 'after',
     upsert: true,
     setDefaultsOnInsert: true,
     runValidators: true,

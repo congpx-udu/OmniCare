@@ -60,6 +60,7 @@ Lỗi thường gặp: frontend báo `502 Bad Gateway` tại `/api/*` → backen
 | `npm run build` | Biên dịch TypeScript ra `dist/` |
 | `npm start` | Chạy bản build `node dist/server.js` |
 | `npm run typecheck` | `tsc --noEmit` |
+npm test           # vitest + supertest, cần MONGO_URI_TEST (mặc định mongodb://localhost:27017/omnicare_test)
 | `npm run format` | Prettier toàn bộ `src/` |
 
 ## Biến môi trường

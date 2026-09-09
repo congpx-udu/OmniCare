@@ -1,5 +1,6 @@
 export { Alert } from './Alert'
 export { Button } from './Button'
 export { Input } from './Input'
+export { LazyPage } from './LazyPage'
 export { Logo } from './Logo'
 export { MedicalDisclaimer } from './MedicalDisclaimer'

@@ -4,8 +4,8 @@ Dịch vụ AI/OCR của **OmniCare**, Python 3.12 + FastAPI. Backend Express (`
 
 ## Stack & lệnh
 
-- FastAPI, Pydantic v2, uvicorn, python-dotenv. Chưa có linter/test runner; thêm `ruff` và `pytest` khi được yêu cầu.
-- Chạy: `uvicorn app.main:app --reload --port 8000`. Docker: `docker compose up -d --build ai` ở gốc repo.
+- FastAPI, Pydantic v2, uvicorn, python-dotenv. Test: `pytest` (cài `requirements-dev.txt`), test trong `tests/` cho ép JSON, chuẩn hóa OCR, prompt. Chưa có linter.
+- Chạy: `uvicorn app.main:app --reload --port 8000`. Test: `pytest`. Docker: `docker compose up -d --build ai` ở gốc repo.
 - LLM gọi qua API kiểu OpenAI `chat/completions` (mặc định GLM của Zhipu) bằng `urllib` chuẩn trong `app/services/llm.py`; cấu hình `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`. Không dùng SDK.
 
 ## Vị trí code

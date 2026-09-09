@@ -133,7 +133,7 @@ export async function sendMessage(userId: string, input: SendChatInput) {
     safeWeather(input.location),
     summarizeRecords(userId),
     ChatMessage.find({ user: userId, mode: input.mode })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .limit(HISTORY_FOR_AI)
       .lean(),
   ])
@@ -198,7 +198,7 @@ export async function sendMessage(userId: string, input: SendChatInput) {
 /** Lịch sử một luồng, thứ tự cũ → mới */
 export async function getHistory(userId: string, query: ChatHistoryQuery) {
   const docs = await ChatMessage.find({ user: userId, mode: query.mode })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .limit(query.limit)
     .lean()
   return docs.reverse().map(toPublicMessage)
