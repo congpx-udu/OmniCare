@@ -19,7 +19,8 @@ _FOOD_SCHEMA = """Schema JSON:
   "activities": ["1-3 gợi ý vận động ngắn hợp thời tiết, có thể rỗng"],
   "follow_up_questions": ["0-2 câu hỏi ngắn để gợi ý sát hơn"]
 }
-Yêu cầu: 2-4 món ăn phổ biến, dễ tìm ở Việt Nam, ưu tiên món địa phương nếu biết vị trí. TUYỆT ĐỐI tránh nguyên liệu người dùng dị ứng, kể cả dạng phái sinh (ví dụ dị ứng hải sản thì tránh cả mắm tôm, mắm ruốc, mắm tép, nước mắm cá, ruốc khô; dị ứng sữa thì tránh phô mai, bơ, kem; dị ứng đậu phộng thì tránh dầu lạc, tương lạc). Nếu món có nước chấm hoặc gia vị chứa chất gây dị ứng thì phải đề xuất thay thế rõ ràng trong notes. Cân nhắc bệnh nền (ví dụ tiểu đường: ít đường tinh luyện; tăng huyết áp: ít muối). Nắng nóng: món mát, nhiều nước; lạnh/mưa: món ấm."""
+Yêu cầu: 2-4 món ăn phổ biến, dễ tìm ở Việt Nam, ưu tiên món địa phương nếu biết vị trí. TUYỆT ĐỐI tránh nguyên liệu người dùng dị ứng, kể cả dạng phái sinh (ví dụ dị ứng hải sản thì tránh cả mắm tôm, mắm ruốc, mắm tép, nước mắm cá, ruốc khô; dị ứng sữa thì tránh phô mai, bơ, kem; dị ứng đậu phộng thì tránh dầu lạc, tương lạc). Nếu món có nước chấm hoặc gia vị chứa chất gây dị ứng thì phải đề xuất thay thế rõ ràng trong notes. Cân nhắc bệnh nền (ví dụ tiểu đường: ít đường tinh luyện; tăng huyết áp: ít muối). Nắng nóng: món mát, nhiều nước; lạnh/mưa: món ấm.
+Theo thời điểm: nếu người dùng không nói rõ bữa nào thì gợi ý cho bữa gần nhất theo giờ địa phương (5-10h: bữa sáng; 10-14h: bữa trưa; 14-17h: bữa xế nhẹ; 17-21h: bữa tối; sau 21h: món nhẹ, dễ tiêu, ít dầu mỡ, tránh caffeine). Nêu rõ trong reply đây là gợi ý cho bữa nào."""
 
 _SYMPTOM_SCHEMA = """Schema JSON:
 {
@@ -76,6 +77,11 @@ def _weather_lines(w: WeatherContext | None) -> list[str]:
 def build_system_prompt(req: ChatRequest) -> str:
     ctx = ["Hồ sơ người dùng (ẩn danh):", *_profile_lines(req.profile)]
     ctx += ["Thời tiết hiện tại:", *_weather_lines(req.weather)]
+    if req.local_time or req.time_of_day:
+        when = req.local_time or ""
+        if req.time_of_day:
+            when = f"{when} ({req.time_of_day})".strip()
+        ctx.append(f"Giờ địa phương hiện tại: {when}")
     if req.feeling:
         ctx.append(f"Cảm nhận hôm nay: {req.feeling}")
     if req.records_summary:

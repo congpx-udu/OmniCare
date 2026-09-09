@@ -39,6 +39,9 @@ class ChatRequest(BaseModel):
     profile: ProfileContext = Field(default_factory=ProfileContext)
     weather: WeatherContext | None = None
     feeling: str | None = Field(default=None, max_length=300)
+    # Giờ địa phương tại vị trí người dùng, dạng "HH:MM" và buổi (sáng/trưa/chiều/tối/khuya)
+    local_time: str | None = Field(default=None, max_length=5)
+    time_of_day: str | None = Field(default=None, max_length=20)
     # Tóm tắt bệnh án đã lưu (Giai đoạn 4), để trống nếu chưa có
     records_summary: str | None = Field(default=None, max_length=2000)
 

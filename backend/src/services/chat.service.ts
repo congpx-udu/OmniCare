@@ -136,6 +136,26 @@ async function callAi(payload: unknown): Promise<AiResponse> {
   return parsed.data
 }
 
+/** Giờ địa phương tại vị trí người dùng (theo offset thời tiết), mặc định giờ Việt Nam */
+function localTime(weather: WeatherSnapshot | null) {
+  const offsetSec = weather?.timezoneOffset ?? 7 * 3600
+  const d = new Date(Date.now() + offsetSec * 1000)
+  const h = d.getUTCHours()
+  const hh = String(h).padStart(2, '0')
+  const mm = String(d.getUTCMinutes()).padStart(2, '0')
+  const period =
+    h < 5 || h >= 21
+      ? 'đêm khuya'
+      : h < 10
+        ? 'buổi sáng'
+        : h < 14
+          ? 'buổi trưa'
+          : h < 17
+            ? 'buổi chiều'
+            : 'buổi tối'
+  return { local_time: `${hh}:${mm}`, time_of_day: period }
+}
+
 // ---------- Public API ----------
 
 export async function sendMessage(userId: string, input: SendChatInput) {
@@ -164,6 +184,7 @@ export async function sendMessage(userId: string, input: SendChatInput) {
     },
     weather: weather ? weatherContext(weather) : null,
     feeling: input.feeling ?? null,
+    ...localTime(weather),
     // Giai đoạn 4 sẽ đưa tóm tắt MedicalRecord vào đây
     records_summary: null,
   }
