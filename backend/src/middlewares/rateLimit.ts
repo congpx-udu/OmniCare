@@ -21,6 +21,15 @@ export const chatLimiter = rateLimit({
   message,
 })
 
+/** OCR tốn LLM vision: 20 ảnh / giờ / IP (prod). */
+export const ocrLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: isProd ? 20 : 300,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message,
+})
+
 /** Chống spam tạo tài khoản: 5 lần đăng ký / giờ / IP. */
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,

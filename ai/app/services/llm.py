@@ -1,4 +1,4 @@
-"""Client tối giản cho API chat/completions kiểu OpenAI (GLM, ...) bằng thư viện chuẩn.
+"""Client tối giản cho API chat/completions kiểu OpenAI (GLM, Gemini, ...) bằng thư viện chuẩn.
 
 Không dùng SDK để tránh thêm dependency; gọi blocking trong threadpool của FastAPI.
 """
@@ -42,10 +42,42 @@ def _extra_params() -> dict[str, Any]:
     return {}
 
 
+def _repair_json(text: str) -> str:
+    """Sửa lỗi JSON hay gặp ở LLM: xuống dòng/tab thật bên trong chuỗi, dấu phẩy thừa trước ] hoặc }."""
+    out: list[str] = []
+    in_str = False
+    escaped = False
+    for ch in text:
+        if in_str:
+            if escaped:
+                escaped = False
+                out.append(ch)
+            elif ch == "\\":
+                escaped = True
+                out.append(ch)
+            elif ch == '"':
+                in_str = False
+                out.append(ch)
+            elif ch == "\n":
+                out.append("\\n")
+            elif ch == "\r":
+                out.append("\\r")
+            elif ch == "\t":
+                out.append("\\t")
+            else:
+                out.append(ch)
+        else:
+            if ch == '"':
+                in_str = True
+            out.append(ch)
+    repaired = "".join(out)
+    return re.sub(r",\s*([\]}])", r"\1", repaired)
+
+
 def _extract_json(text: str) -> dict[str, Any]:
-    """Model đôi khi bọc JSON trong ```json ... ``` hoặc thêm chữ; lấy object đầu tiên."""
+    """Model đôi khi bọc JSON trong ```json ... ``` hoặc thêm chữ; lấy object đầu tiên, sửa lỗi nhẹ."""
     text = text.strip()
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.S)
     if fenced:
         text = fenced.group(1)
     if not text.startswith("{"):
@@ -56,8 +88,11 @@ def _extract_json(text: str) -> dict[str, Any]:
         text = text[start : end + 1]
     try:
         data = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise LLMError("JSON từ LLM không hợp lệ") from exc
+    except json.JSONDecodeError:
+        try:
+            data = json.loads(_repair_json(text))
+        except json.JSONDecodeError as exc:
+            raise LLMError("JSON từ LLM không hợp lệ") from exc
     if not isinstance(data, dict):
         raise LLMError("JSON từ LLM không phải object")
     return data
@@ -65,10 +100,11 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 def chat_json(
     system: str,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     temperature: float = 0.4,
     retries: int = 1,
+    max_tokens: int | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Gọi chat/completions ép JSON, trả (dict, model). Thử lại 1 lần khi lỗi mạng/JSON."""
     if not settings.llm_api_key:
@@ -78,7 +114,7 @@ def chat_json(
         "model": settings.llm_model,
         "messages": [{"role": "system", "content": system}, *messages],
         "temperature": temperature,
-        "max_tokens": settings.llm_max_tokens,
+        "max_tokens": max_tokens or settings.llm_max_tokens,
         "response_format": {"type": "json_object"},
         **_extra_params(),
     }
@@ -97,9 +133,19 @@ def chat_json(
         try:
             with urllib.request.urlopen(req, timeout=settings.llm_timeout) as res:
                 body = json.loads(res.read().decode("utf-8"))
-            content = body["choices"][0]["message"]["content"]
+            choice = body["choices"][0]
+            content = choice["message"]["content"]
             model = str(body.get("model", settings.llm_model))
-            return _extract_json(content), model
+            try:
+                return _extract_json(content), model
+            except LLMError:
+                # Không log nội dung (có thể là dữ liệu y tế); chỉ log kích thước và lý do dừng
+                log.warning(
+                    "LLM JSON parse failed: len=%s finish_reason=%s",
+                    len(content or ""),
+                    choice.get("finish_reason"),
+                )
+                raise
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:300]
             log.warning("LLM HTTP %s (attempt %s): %s", exc.code, attempt, detail)

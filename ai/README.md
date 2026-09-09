@@ -46,7 +46,8 @@ app/
 ├── routers/
 │   ├── health.py     GET /health
 │   ├── chat.py       POST /chat — hai luồng food / symptom, output JSON ép schema
-│   └── insight.py    POST /insights/weather — "ảnh hưởng đến bạn" theo hồ sơ + giờ trong ngày
+│   ├── insight.py    POST /insights/weather
+│   └── ocr.py        POST /ocr — ảnh base64 → JSON bệnh án/đơn thuốc (LLM vision, một bước) — "ảnh hưởng đến bạn" theo hồ sơ + giờ trong ngày
 ├── schemas/          chat.py, insight.py
 └── services/
     ├── llm.py        Client chat/completions (urllib), ép JSON, retry
@@ -61,7 +62,11 @@ Trả: `{ mode, reply, risk_level, possible_conditions[], suggested_specialty, f
 
 ## POST /insights/weather
 
-Body: `{ profile?, weather, forecast_note?, local_time?, time_of_day? }` → `{ summary, tips[{title, detail}], meal_idea, activity_idea, disclaimer, model, latency_ms }`. Gợi ý bữa ăn/vận động bám theo buổi trong ngày. Lỗi LLM: 503 (chưa cấu hình / key sai / quá tải), 502 (phản hồi lỗi), 504 (timeout).
+Body: `{ profile?, weather, forecast_note?, local_time?, time_of_day? }` → `{ summary, tips[{title, detail}], meal_idea, activity_idea, disclaimer, model, latency_ms }`. Gợi ý bữa ăn/vận động bám theo buổi trong ngày.
+
+## POST /ocr
+
+Body: `{ images: [{ image_base64, mime_type: image/jpeg|png|webp }] (1–8 trang cùng bộ hồ sơ), hint_type? }` → `{ document_type, facility, doctor, visit_date, diagnosis, medications[{name, dose, frequency, duration, instructions}], medication_table {columns[{key,label}], rows[]} (bảng đúng cột của tài liệu), notes, raw_text (mỗi trang mở đầu bằng `--- Trang N ---`), pages_read, confidence, warnings[], model, latency_ms }`. Nhiều ảnh được gộp thành một kết quả. Dùng LLM đa phương thức (Gemini) đọc ảnh trực tiếp, không cần Tesseract. 422 nếu không đọc được gì. Lỗi LLM: 503 (chưa cấu hình / key sai / quá tải), 502 (phản hồi lỗi), 504 (timeout).
 
 Thêm endpoint mới: tạo `app/routers/<domain>.py` với `APIRouter`, schema request/response bằng Pydantic, rồi `include_router` trong `main.py`.
 

@@ -5,7 +5,9 @@ import { ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchProfile } from '@/redux/slices/profileSlice'
+import { fetchRecords } from '@/redux/slices/recordsSlice'
 import { fetchWeather } from '@/redux/slices/weatherSlice'
+import { RecordCard } from '@/components/records'
 import { WeatherSummaryCard } from '@/components/weather'
 
 const SHORTCUTS = [
@@ -41,6 +43,7 @@ export function DashboardPage() {
   const dispatch = useAppDispatch()
   const { profile, status } = useAppSelector((s) => s.profile)
   const weather = useAppSelector((s) => s.weather)
+  const records = useAppSelector((s) => s.records)
 
   useEffect(() => {
     if (status === 'idle') void dispatch(fetchProfile())
@@ -53,6 +56,11 @@ export function DashboardPage() {
     }
   }, [dispatch, weather.query, weather.data, weather.status])
 
+  useEffect(() => {
+    if (records.listStatus === 'idle') void dispatch(fetchRecords({ limit: 3 }))
+  }, [dispatch, records.listStatus])
+
+  const latestRecord = records.items[0] ?? null
   const needsProfile = profile !== null && !profile.isComplete
   return (
     <section className="space-y-8">
@@ -92,6 +100,21 @@ export function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {latestRecord && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg">Bệnh án gần nhất</h2>
+            <Link
+              to={ROUTES.RECORDS}
+              className="text-secondary text-sm font-semibold hover:underline"
+            >
+              Xem tất cả
+            </Link>
+          </div>
+          <RecordCard record={latestRecord} />
+        </div>
+      )}
 
       <MedicalDisclaimer />
     </section>

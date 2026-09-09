@@ -92,7 +92,8 @@ src/
 │   ├── auth.routes.ts        POST /register, POST /login, GET /me
 │   ├── profile.routes.ts     GET /, PUT / (hồ sơ sức khỏe)
 │   ├── context.routes.ts     GET /weather (thời tiết theo vị trí)
-│   └── chat.routes.ts        POST /, GET/DELETE /history (chat AI hai luồng)
+│   ├── chat.routes.ts        POST /, GET/DELETE /history (chat AI hai luồng)
+│   └── record.routes.ts      /upload, /, /:id, /:id/image, /:id/reprocess (hồ sơ bệnh án)
 ├── controllers/
 │   ├── auth.controller.ts    Nhận req, gọi service, trả ok()/created()
 │   └── health.controller.ts  Health check + trạng thái DB
@@ -152,9 +153,11 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | POST 🔒 | `/chat` | ⏱ 30/15 phút/IP (prod). `{ mode: food\|symptom, message, feeling?, location?: {lat,lon}\|{city} }` → `{ userMessage, assistantMessage (meta: riskLevel, meals, possibleConditions...), disclaimer }`. Gom hồ sơ ẩn danh + thời tiết + 10 tin gần nhất gửi AI | ✅ |
 | GET 🔒 | `/chat/history?mode=&limit=` | Lịch sử một luồng, cũ → mới | ✅ |
 | DELETE 🔒 | `/chat/history?mode=` | Xóa lịch sử một luồng | ✅ |
-| POST 🔒 | `/records/upload` | Upload ảnh bệnh án/đơn thuốc (multipart `image`), tạo MedicalRecord và gọi OCR | ⏳ |
-| GET 🔒 | `/records`, `/records/:id` | Timeline hồ sơ bệnh án, chi tiết kết quả OCR | ⏳ |
-| PUT/DELETE 🔒 | `/records/:id` | Sửa tay dữ liệu bóc tách / xóa | ⏳ |
+| POST 🔒 | `/records/upload` | ⏱ 20/giờ/IP (prod). multipart `images[]` (1–8 trang cùng bộ hồ sơ, mỗi ảnh JPEG/PNG/WEBP ≤10MB) + `type?`. Lưu ảnh, gọi AI `/ocr` một lần cho tất cả trang và gộp thành một kết quả, trả record `status: needs_review` (hoặc `failed` kèm `errorMessage`) | ✅ |
+| GET 🔒 | `/records/:id/image/:page` | Ảnh trang thứ `page` (0-based, chỉ chủ sở hữu) | ✅ |
+| POST 🔒 | `/records/:id/reprocess` | OCR lại ảnh đã lưu | ✅ |
+| GET 🔒 | `/records?year=&q=&limit=`, `/records/:id` | Danh sách theo ngày khám giảm dần (`q` tìm chẩn đoán, cơ sở, tên thuốc, ghi chú), chi tiết | ✅ |
+| PUT/DELETE 🔒 | `/records/:id` | Sửa tay `{ facility?, doctor?, visitDate?, diagnosis?, medicationTable?: {columns[{key,label}], rows[]} (bảng đúng cột tài liệu, backend suy ra `medications` chuẩn hóa từ bảng), notes?, confirm? }` (loại tài liệu do AI nhận dạng) (`confirm: true` → `done`) / xóa hồ sơ và ảnh | ✅ |
 | GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
 | PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
 | GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |

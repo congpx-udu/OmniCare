@@ -2,6 +2,7 @@
 
 from app.schemas.chat import ChatRequest, ProfileContext, WeatherContext
 from app.schemas.insight import WeatherInsightRequest
+from app.schemas.ocr import OcrRequest
 
 _COMMON = """Bạn là trợ lý sức khỏe OmniCare, nói tiếng Việt tự nhiên, ngắn gọn, thân thiện, xưng "mình" và gọi người dùng là "bạn".
 Nguyên tắc bắt buộc:
@@ -124,3 +125,61 @@ def build_insight_prompt(req: WeatherInsightRequest) -> tuple[str, str]:
             when = f"{when} ({req.time_of_day})".strip()
         ctx.append(f"Giờ địa phương hiện tại: {when}")
     return _INSIGHT_SYSTEM, "\n".join(ctx)
+
+
+# ---------- OCR bệnh án / đơn thuốc (Giai đoạn 4) ----------
+
+OCR_SYSTEM = """Bạn là hệ thống đọc và bóc tách tài liệu y tế in máy của Việt Nam (đơn thuốc, bệnh án, phiếu khám, kết quả xét nghiệm).
+Nhiệm vụ: đọc CHÍNH XÁC chữ trong ảnh, giữ nguyên tiếng Việt có dấu, rồi bóc tách thành JSON. Không suy diễn, không thêm thông tin không có trong ảnh; trường không đọc được để null.
+Không đưa lời khuyên y khoa, không bình luận về chẩn đoán hay thuốc.
+Trả lời CHỈ bằng JSON hợp lệ theo schema:
+{
+  "document_type": "prescription | medical_record | lab_result | other",
+  "facility": "tên cơ sở y tế hoặc null",
+  "doctor": "tên bác sĩ (bỏ tiền tố BS./Bác sĩ) hoặc null",
+  "visit_date": "ngày khám/kê đơn dạng yyyy-mm-dd hoặc null",
+  "diagnosis": "chẩn đoán đầy đủ như trong ảnh hoặc null",
+  "medications": [
+    {"name": "tên thuốc + hàm lượng nếu có", "dose": "liều mỗi lần (vd: 1 viên)", "frequency": "số lần/ngày, thời điểm (vd: 2 lần/ngày sáng-tối)", "quantity": "tổng số lượng cấp trong đơn, đúng đơn vị (vd: 21 viên, 2 lọ) hoặc null", "duration": "số ngày dùng (vd: 7 ngày) hoặc null, KHÔNG ghi số lượng vào đây", "instructions": "lưu ý dùng thuốc hoặc null"}
+  ],
+  "medication_table": {
+    "columns": [{"key": "slug_ascii", "label": "tên cột ĐÚNG như in trên tài liệu, vd: 'Tên thuốc - Hàm lượng', 'SL', 'Cách dùng'"}],
+    "rows": [{"slug_ascii": "giá trị ô nguyên văn"}]
+  },
+  "notes": "lời dặn của bác sĩ, ngày tái khám hoặc null",
+  "raw_text": "toàn bộ chữ đọc được, mỗi dòng cách nhau bằng \n, theo thứ tự trong ảnh",
+  "confidence": 0.0-1.0 (độ tin cậy tổng thể: ảnh rõ, in máy ≈ 0.9; mờ/nghiêng/thiếu góc ≈ 0.5; chữ viết tay ≈ 0.3),
+  "warnings": ["cảnh báo ngắn cho người dùng nếu ảnh mờ, bị cắt, có chữ viết tay, nhiều trang..."]
+}
+medication_table: chép lại bảng thuốc ĐÚNG cấu trúc của tài liệu — mỗi bệnh viện in cột khác nhau, hãy giữ nguyên tên và thứ tự cột như trên giấy (bỏ cột STT), mỗi dòng một thuốc, giá trị ô nguyên văn; nếu tài liệu không có bảng thì tạo cột hợp lý từ nội dung. medications là bản chuẩn hóa của cùng các thuốc đó để hệ thống dùng nội bộ.
+Với thuốc: chỉ chép lại đúng như đơn, không quy đổi, không bổ sung liều. Không bịa tên thuốc; nếu không chắc một ký tự, giữ nguyên dạng đọc được và thêm warning.
+Nhiều ảnh = nhiều trang của CÙNG một bộ hồ sơ theo thứ tự gửi lên: gộp thành MỘT kết quả (một danh sách thuốc không trùng, một chẩn đoán đầy đủ). raw_text ghi từng trang, mở đầu mỗi trang bằng dòng "--- Trang N ---". Nếu một ảnh rõ ràng không thuộc bộ hồ sơ (khác bệnh nhân/cơ sở/ngày) thì thêm warning nêu số trang đó."""
+
+
+def build_ocr_user_content(req: OcrRequest) -> list[dict]:
+    """Nội dung đa phương thức kiểu OpenAI: ảnh (data URI) + chỉ dẫn ngắn."""
+    hint = {
+        "prescription": "Đây là đơn thuốc.",
+        "medical_record": "Đây là bệnh án / phiếu khám.",
+        "lab_result": "Đây là kết quả xét nghiệm.",
+        "other": "",
+        None: "",
+    }[req.hint_type]
+    n = len(req.images)
+    text = (
+        f"Đọc và bóc tách bộ hồ sơ y tế gồm {n} trang ảnh dưới đây (theo thứ tự) thành MỘT kết quả theo schema. "
+        if n > 1
+        else "Đọc và bóc tách tài liệu y tế trong ảnh này theo schema. "
+    ) + hint
+    content: list[dict] = []
+    for i, img in enumerate(req.images, start=1):
+        if n > 1:
+            content.append({"type": "text", "text": f"Trang {i}/{n}:"})
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{img.mime_type};base64,{img.image_base64}"},
+            }
+        )
+    content.append({"type": "text", "text": text.strip()})
+    return content
