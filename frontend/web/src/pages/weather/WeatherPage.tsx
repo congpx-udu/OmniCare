@@ -61,7 +61,7 @@ export function WeatherPage() {
                 </p>
               </div>
               <Link
-                to={ROUTES.CHAT}
+                to={`${ROUTES.CHAT}?mode=food`}
                 className="bg-secondary hover:bg-secondary-600 font-heading inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition"
               >
                 Gợi ý món ăn

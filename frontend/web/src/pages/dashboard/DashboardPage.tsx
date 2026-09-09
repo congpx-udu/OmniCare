@@ -10,10 +10,16 @@ import { WeatherSummaryCard } from '@/components/weather'
 
 const SHORTCUTS = [
   {
-    to: ROUTES.CHAT,
-    title: 'Chat sức khỏe',
-    desc: 'Mô tả triệu chứng, nhận phân tích sơ bộ và gợi ý chuyên khoa.',
+    to: `${ROUTES.CHAT}?mode=symptom`,
+    title: 'Hỏi AI về cảm nhận hôm nay',
+    desc: 'Mô tả triệu chứng, nhận nhóm vấn đề có thể liên quan, mức độ và nơi nên khám.',
     accent: 'bg-secondary',
+  },
+  {
+    to: `${ROUTES.CHAT}?mode=food`,
+    title: 'Gợi ý bữa ăn hôm nay',
+    desc: 'Món ăn hợp thời tiết tại nơi bạn ở, tránh dị ứng và bệnh nền.',
+    accent: 'bg-secondary-300',
   },
   {
     to: ROUTES.RECORDS,
@@ -69,7 +75,7 @@ export function DashboardPage() {
 
       <WeatherSummaryCard data={weather.data} loading={weather.status === 'loading'} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {SHORTCUTS.map((s) => (
           <Link
             key={s.to}

@@ -24,5 +24,5 @@ def health() -> HealthResponse:
         service=settings.service_name,
         env=settings.env,
         uptime=round(time.monotonic() - _started_at, 2),
-        llm_configured=settings.anthropic_api_key is not None,
+        llm_configured=settings.llm_configured,
     )

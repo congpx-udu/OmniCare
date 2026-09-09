@@ -1,13 +1,12 @@
 """OmniCare AI service — FastAPI.
 
-Giai đoạn 0: chỉ có /health để backend kiểm tra kết nối.
-Giai đoạn 3 thêm POST /chat (LLM), Giai đoạn 4 thêm POST /ocr.
+/health: backend kiểm tra kết nối. /chat: LLM hai luồng (food, symptom). Giai đoạn 4 thêm POST /ocr.
 """
 
 from fastapi import FastAPI
 
 from app.config import settings
-from app.routers import health
+from app.routers import chat, health
 
 app = FastAPI(
     title="OmniCare AI Service",
@@ -16,6 +15,7 @@ app = FastAPI(
 )
 
 app.include_router(health.router)
+app.include_router(chat.router)
 
 
 @app.get("/", include_in_schema=False)

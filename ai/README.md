@@ -31,7 +31,11 @@ Hoặc bằng Docker ở thư mục gốc repo: `docker compose up -d --build ai
 |---|---|---|
 | `AI_ENV` | `development` | `development` / `production` |
 | `AI_PORT` | `8000` | Cổng uvicorn (chỉ dùng khi chạy tay) |
-| `ANTHROPIC_API_KEY` | | Khóa Claude API, cần từ Giai đoạn 3 |
+| `LLM_API_KEY` | | Khóa API LLM (GLM/Zhipu hoặc nhà cung cấp OpenAI-compatible), cần cho `/chat` |
+| `LLM_BASE_URL` | `https://open.bigmodel.cn/api/paas/v4` | Base URL API chat/completions |
+| `LLM_MODEL` | `glm-4.7` | Tên model |
+| `LLM_TIMEOUT` | `20` | Timeout mỗi lần gọi (giây), retry 1 lần |
+| `LLM_MAX_TOKENS` | `1200` | Giới hạn token trả về |
 
 ## Cấu trúc
 
@@ -39,9 +43,20 @@ Hoặc bằng Docker ở thư mục gốc repo: `docker compose up -d --build ai
 app/
 ├── main.py           Tạo FastAPI app, include router
 ├── config.py         Settings đọc từ env (.env qua python-dotenv)
-└── routers/
-    └── health.py     GET /health
+├── routers/
+│   ├── health.py     GET /health
+│   └── chat.py       POST /chat — hai luồng food / symptom, output JSON ép schema
+├── schemas/chat.py   ChatRequest / ChatResponse
+└── services/
+    ├── llm.py        Client chat/completions (urllib), ép JSON, retry
+    └── prompts.py    System prompt + ngữ cảnh (hồ sơ ẩn danh, thời tiết, cảm nhận)
 ```
+
+## POST /chat
+
+Body: `{ mode: "food" | "symptom", messages: [{role, content}], profile?: {age, gender, height_cm, weight_kg, bmi, chronic_conditions[], allergies[]}, weather?: {location, temp, feels_like, humidity, description, rain_chance}, feeling?, records_summary? }`.
+
+Trả: `{ mode, reply, risk_level, possible_conditions[], suggested_specialty, facility_type, follow_up_questions[], meals[], activities[], disclaimer, model, latency_ms }`. Lỗi LLM: 503 (chưa cấu hình / key sai / quá tải), 502 (phản hồi lỗi), 504 (timeout).
 
 Thêm endpoint mới: tạo `app/routers/<domain>.py` với `APIRouter`, schema request/response bằng Pydantic, rồi `include_router` trong `main.py`.
 

@@ -91,7 +91,8 @@ src/
 │   ├── index.ts              apiRouter: /health, /auth, ...
 │   ├── auth.routes.ts        POST /register, POST /login, GET /me
 │   ├── profile.routes.ts     GET /, PUT / (hồ sơ sức khỏe)
-│   └── context.routes.ts     GET /weather (thời tiết theo vị trí)
+│   ├── context.routes.ts     GET /weather (thời tiết theo vị trí)
+│   └── chat.routes.ts        POST /, GET/DELETE /history (chat AI hai luồng)
 ├── controllers/
 │   ├── auth.controller.ts    Nhận req, gọi service, trả ok()/created()
 │   └── health.controller.ts  Health check + trạng thái DB
@@ -148,8 +149,9 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | POST | `/auth/register` | ⏱ 5/giờ/IP (prod). Đăng ký `{ fullName, phone, password, email? }` → `{ user }` (không trả token, client chuyển về trang đăng nhập) | ✅ |
 | POST | `/auth/login` | ⏱ 10/15 phút/IP (prod). Đăng nhập `{ phone, password }` → `{ token, user }`. `phone` nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx` | ✅ |
 | GET 🔒 | `/auth/me` | Thông tin người dùng hiện tại | ✅ |
-| POST 🔒 | `/chat` | Gửi triệu chứng/cảm nhận, nhận phân tích + gợi ý | ⏳ |
-| GET 🔒 | `/chat/history` | Lịch sử chat | ⏳ |
+| POST 🔒 | `/chat` | ⏱ 30/15 phút/IP (prod). `{ mode: food\|symptom, message, feeling?, location?: {lat,lon}\|{city} }` → `{ userMessage, assistantMessage (meta: riskLevel, meals, possibleConditions...), disclaimer }`. Gom hồ sơ ẩn danh + thời tiết + 10 tin gần nhất gửi AI | ✅ |
+| GET 🔒 | `/chat/history?mode=&limit=` | Lịch sử một luồng, cũ → mới | ✅ |
+| DELETE 🔒 | `/chat/history?mode=` | Xóa lịch sử một luồng | ✅ |
 | POST 🔒 | `/records/upload` | Upload ảnh bệnh án/đơn thuốc (multipart `image`), tạo MedicalRecord và gọi OCR | ⏳ |
 | GET 🔒 | `/records`, `/records/:id` | Timeline hồ sơ bệnh án, chi tiết kết quả OCR | ⏳ |
 | PUT/DELETE 🔒 | `/records/:id` | Sửa tay dữ liệu bóc tách / xóa | ⏳ |
