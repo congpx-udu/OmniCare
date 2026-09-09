@@ -32,9 +32,10 @@ export const recordService = {
     axiosClient.get<ApiResponse<MedicalRecord>, ApiResponse<MedicalRecord>>(
       ENDPOINTS.RECORDS.DETAIL(id),
     ),
-  upload: (file: File, type?: RecordType) => {
+  /** Nhiều file = nhiều trang của cùng một bộ hồ sơ, AI gộp thành một kết quả */
+  upload: (files: File[], type?: RecordType) => {
     const form = new FormData()
-    form.append('image', file)
+    for (const f of files) form.append('images', f)
     if (type) form.append('type', type)
     return axiosClient.post<ApiResponse<MedicalRecord>, ApiResponse<MedicalRecord>>(
       ENDPOINTS.RECORDS.UPLOAD,
@@ -58,6 +59,6 @@ export const recordService = {
       ENDPOINTS.RECORDS.DETAIL(id),
     ),
   /** Ảnh gốc cần token nên tải về dạng Blob rồi tạo object URL ở hook */
-  image: (id: string) =>
-    axiosClient.get<Blob, Blob>(ENDPOINTS.RECORDS.IMAGE(id), { responseType: 'blob' }),
+  image: (id: string, page = 0) =>
+    axiosClient.get<Blob, Blob>(ENDPOINTS.RECORDS.IMAGE(id, page), { responseType: 'blob' }),
 }

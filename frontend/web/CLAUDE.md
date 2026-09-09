@@ -82,7 +82,7 @@ Page → hook / dispatch thunk → service → axiosClient → backend
 - Mọi màn hình chat/gợi ý sức khỏe **bắt buộc** hiển thị `<MedicalDisclaimer />` (yêu cầu AI-04). Không xóa, không ẩn. Trang `/chat` có 2 luồng trong một khung (`?mode=food|symptom`), lịch sử tách riêng; `riskLevel: emergency` phải hiện banner đỏ kèm số 115. Footer `AppLayout` và `LandingLayout` cũng đã có disclaimer.
 - Không hardcode lời khuyên y khoa, liều thuốc, chẩn đoán trong frontend. Nội dung y tế đến từ backend/AI.
 - Dữ liệu sức khỏe là PII nhạy cảm: không `console.log`, không lưu localStorage (chỉ lưu token đăng nhập qua `STORAGE_KEYS.TOKEN`), không gửi bên thứ ba.
-- Ảnh đơn thuốc/bệnh án upload qua `multipart/form-data` (`recordService.upload`), không giữ base64 trong state lâu dài. Ảnh gốc nằm sau xác thực (`/records/:id/image`), hiển thị qua `useRecordImage` (Blob → object URL, thu hồi khi unmount), không dùng `<img src>` thẳng.
+- Ảnh đơn thuốc/bệnh án upload qua `multipart/form-data` (`recordService.upload`, nhiều file = nhiều trang của một bộ hồ sơ, AI gộp thành một kết quả), không giữ base64 trong state lâu dài. Ảnh gốc nằm sau xác thực (`/records/:id/image/:page`), hiển thị qua `useRecordImage` (Blob → object URL, thu hồi khi unmount), không dùng `<img src>` thẳng.
 - Vị trí: dùng `useGeolocation().request(onSuccess)` khi người dùng bấm, luôn có fallback nhập tay thành phố. Vị trí đã chọn chỉ nhớ trong `sessionStorage` (`STORAGE_KEYS.WEATHER_QUERY`), không lưu localStorage.
 
 ## 7. Những điều KHÔNG làm

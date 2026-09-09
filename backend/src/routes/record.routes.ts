@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import {
   listRecordsSchema,
   recordIdSchema,
+  recordPageSchema,
   updateRecordSchema,
   uploadRecordSchema,
 } from '../validators/record.validator.js'
@@ -18,13 +19,14 @@ recordRouter.use(requireAuth)
 recordRouter.post(
   '/upload',
   ocrLimiter,
-  uploadImage.single('image'),
+  uploadImage.array('images', 8),
   validate(uploadRecordSchema),
   asyncHandler(ctrl.upload),
 )
 recordRouter.get('/', validate(listRecordsSchema), asyncHandler(ctrl.list))
 recordRouter.get('/:id', validate(recordIdSchema), asyncHandler(ctrl.detail))
-recordRouter.get('/:id/image', validate(recordIdSchema), asyncHandler(ctrl.image))
+recordRouter.get('/:id/image/:page', validate(recordPageSchema), asyncHandler(ctrl.image))
+recordRouter.get('/:id/image', validate(recordPageSchema), asyncHandler(ctrl.image))
 recordRouter.put('/:id', validate(updateRecordSchema), asyncHandler(ctrl.update))
 recordRouter.post(
   '/:id/reprocess',

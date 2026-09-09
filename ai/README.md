@@ -66,7 +66,7 @@ Body: `{ profile?, weather, forecast_note?, local_time?, time_of_day? }` → `{ 
 
 ## POST /ocr
 
-Body: `{ image_base64, mime_type: image/jpeg|png|webp, hint_type? }` → `{ document_type, facility, doctor, visit_date, diagnosis, medications[{name, dose, frequency, duration, instructions}], notes, raw_text, confidence, warnings[], model, latency_ms }`. Dùng LLM đa phương thức (Gemini) đọc ảnh trực tiếp, không cần Tesseract. 422 nếu không đọc được gì. Lỗi LLM: 503 (chưa cấu hình / key sai / quá tải), 502 (phản hồi lỗi), 504 (timeout).
+Body: `{ images: [{ image_base64, mime_type: image/jpeg|png|webp }] (1–8 trang cùng bộ hồ sơ), hint_type? }` → `{ document_type, facility, doctor, visit_date, diagnosis, medications[{name, dose, frequency, duration, instructions}], notes, raw_text (mỗi trang mở đầu bằng `--- Trang N ---`), pages_read, confidence, warnings[], model, latency_ms }`. Nhiều ảnh được gộp thành một kết quả. Dùng LLM đa phương thức (Gemini) đọc ảnh trực tiếp, không cần Tesseract. 422 nếu không đọc được gì. Lỗi LLM: 503 (chưa cấu hình / key sai / quá tải), 502 (phản hồi lỗi), 504 (timeout).
 
 Thêm endpoint mới: tạo `app/routers/<domain>.py` với `APIRouter`, schema request/response bằng Pydantic, rồi `include_router` trong `main.py`.
 

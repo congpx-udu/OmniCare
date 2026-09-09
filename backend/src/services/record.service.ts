@@ -11,7 +11,7 @@ import type {
   UploadRecordInput,
 } from '../validators/record.validator.js'
 
-const AI_TIMEOUT_MS = 90_000
+const AI_TIMEOUT_MS = 150_000
 const UPLOAD_DIR = path.resolve('uploads')
 
 // ---------- Schema response AI /ocr ----------
@@ -34,6 +34,7 @@ const ocrSchema = z.object({
   notes: z.string().nullable().default(null),
   raw_text: z.string(),
   confidence: z.number(),
+  pages_read: z.number().optional(),
   warnings: z.array(z.string()).default([]),
   model: z.string(),
   latency_ms: z.number(),
@@ -64,8 +65,8 @@ export interface PublicRecord {
   confidence: number | null
   warnings: string[]
   errorMessage: string | null
-  imageMime: string
-  imageSize: number
+  /** Các trang ảnh; xem từng trang qua /records/:id/image/:page (0-based) */
+  pages: Array<{ mime: string; size: number }>
   createdAt: string
   updatedAt: string
 }
@@ -84,8 +85,7 @@ interface RecordSource {
   confidence?: number | null
   warnings?: string[]
   errorMessage?: string | null
-  imageMime: string
-  imageSize: number
+  pages?: Array<{ path: string; mime: string; size: number }>
   createdAt?: Date
   updatedAt?: Date
 }
@@ -111,8 +111,7 @@ function toPublic(r: RecordSource): PublicRecord {
     confidence: r.confidence ?? null,
     warnings: r.warnings ?? [],
     errorMessage: r.errorMessage ?? null,
-    imageMime: r.imageMime,
-    imageSize: r.imageSize,
+    pages: (r.pages ?? []).map((p) => ({ mime: p.mime, size: p.size })),
     createdAt: (r.createdAt ?? new Date()).toISOString(),
     updatedAt: (r.updatedAt ?? new Date()).toISOString(),
   }
@@ -133,18 +132,19 @@ function parseVisitDate(s: string | null) {
 
 // ---------- OCR qua AI service ----------
 
-async function runOcr(imagePath: string, mime: string, hint?: RecordType) {
-  const buf = await readFile(safeImagePath(imagePath))
+async function runOcr(pages: Array<{ path: string; mime: string }>, hint?: RecordType) {
+  const images = await Promise.all(
+    pages.map(async (p) => ({
+      image_base64: (await readFile(safeImagePath(p.path))).toString('base64'),
+      mime_type: p.mime,
+    })),
+  )
   let res: Response
   try {
     res = await fetch(`${env.AI_SERVICE_URL}/ocr`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        image_base64: buf.toString('base64'),
-        mime_type: mime,
-        hint_type: hint ?? null,
-      }),
+      body: JSON.stringify({ images, hint_type: hint ?? null }),
       signal: AbortSignal.timeout(AI_TIMEOUT_MS),
     })
   } catch (err) {
@@ -174,7 +174,7 @@ async function processRecord(recordId: string, userId: string, hint?: RecordType
   record.errorMessage = undefined
   await record.save()
   try {
-    const ocr = await runOcr(record.imagePath, record.imageMime, hint)
+    const ocr = await runOcr(record.pages, hint)
     record.set({
       type: ocr.document_type,
       status: 'needs_review',
@@ -201,18 +201,17 @@ async function processRecord(recordId: string, userId: string, hint?: RecordType
 
 // ---------- Public API ----------
 
+/** Một lần upload = một bộ hồ sơ nhiều trang; AI đọc tất cả trang và gộp thành một kết quả */
 export async function uploadRecord(
   userId: string,
-  file: Express.Multer.File,
+  files: Express.Multer.File[],
   input: UploadRecordInput,
 ) {
   const record = await MedicalRecord.create({
     user: userId,
     type: input.type ?? 'other',
     status: 'pending',
-    imagePath: file.path,
-    imageMime: file.mimetype,
-    imageSize: file.size,
+    pages: files.map((f) => ({ path: f.path, mime: f.mimetype, size: f.size })),
   })
   return processRecord(String(record._id), userId, input.type)
 }
@@ -247,12 +246,12 @@ export async function getRecord(userId: string, id: string) {
 }
 
 /** Đường dẫn tuyệt đối + mime để controller gửi file (đã kiểm tra chủ sở hữu) */
-export async function getRecordImage(userId: string, id: string) {
-  const doc = await MedicalRecord.findOne({ _id: id, user: userId })
-    .select('imagePath imageMime')
-    .lean()
+export async function getRecordImage(userId: string, id: string, page: number) {
+  const doc = await MedicalRecord.findOne({ _id: id, user: userId }).select('pages').lean()
   if (!doc) throw ApiError.notFound('Không tìm thấy hồ sơ')
-  return { absolutePath: safeImagePath(doc.imagePath), mime: doc.imageMime }
+  const p = doc.pages?.[page]
+  if (!p) throw ApiError.notFound('Không tìm thấy trang ảnh')
+  return { absolutePath: safeImagePath(p.path), mime: p.mime }
 }
 
 export async function updateRecord(userId: string, id: string, input: UpdateRecordInput) {
@@ -271,10 +270,12 @@ export async function updateRecord(userId: string, id: string, input: UpdateReco
 export async function deleteRecord(userId: string, id: string) {
   const record = await MedicalRecord.findOneAndDelete({ _id: id, user: userId })
   if (!record) throw ApiError.notFound('Không tìm thấy hồ sơ')
-  try {
-    await unlink(safeImagePath(record.imagePath))
-  } catch (err) {
-    logger.warn({ err }, 'could not delete record image')
+  for (const p of record.pages ?? []) {
+    try {
+      await unlink(safeImagePath(p.path))
+    } catch (err) {
+      logger.warn({ err }, 'could not delete record image')
+    }
   }
   return { deleted: true }
 }

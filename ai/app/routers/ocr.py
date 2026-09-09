@@ -66,12 +66,16 @@ async def ocr(req: OcrRequest) -> OcrResponse:
             OCR_SYSTEM,
             [{"role": "user", "content": user_content}],
             temperature=0.1,
+            max_tokens=8000,
         )
         data = _normalize(raw)
         if not data["raw_text"] and not data["medications"] and not data["diagnosis"]:
             raise LLMError("Không đọc được nội dung trong ảnh", status=422)
         return OcrResponse(
-            **data, model=model, latency_ms=int((time.perf_counter() - started) * 1000)
+            **data,
+            pages_read=len(req.images),
+            model=model,
+            latency_ms=int((time.perf_counter() - started) * 1000),
         )
     except LLMError as exc:
         raise HTTPException(status_code=exc.status, detail=str(exc)) from exc

@@ -39,6 +39,13 @@ export const recordIdSchema = z.object({
   params: z.object({ id: objectId }),
 })
 
+export const recordPageSchema = z.object({
+  params: z.object({
+    id: objectId,
+    page: z.coerce.number().int().min(0).max(7).default(0),
+  }),
+})
+
 export const listRecordsSchema = z.object({
   query: z.object({
     year: z.coerce.number().int().min(1900).max(2100).optional(),

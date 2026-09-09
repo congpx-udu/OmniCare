@@ -147,7 +147,8 @@ Trả lời CHỈ bằng JSON hợp lệ theo schema:
   "confidence": 0.0-1.0 (độ tin cậy tổng thể: ảnh rõ, in máy ≈ 0.9; mờ/nghiêng/thiếu góc ≈ 0.5; chữ viết tay ≈ 0.3),
   "warnings": ["cảnh báo ngắn cho người dùng nếu ảnh mờ, bị cắt, có chữ viết tay, nhiều trang..."]
 }
-Với thuốc: chỉ chép lại đúng như đơn, không quy đổi, không bổ sung liều. Không bịa tên thuốc; nếu không chắc một ký tự, giữ nguyên dạng đọc được và thêm warning."""
+Với thuốc: chỉ chép lại đúng như đơn, không quy đổi, không bổ sung liều. Không bịa tên thuốc; nếu không chắc một ký tự, giữ nguyên dạng đọc được và thêm warning.
+Nhiều ảnh = nhiều trang của CÙNG một bộ hồ sơ theo thứ tự gửi lên: gộp thành MỘT kết quả (một danh sách thuốc không trùng, một chẩn đoán đầy đủ). raw_text ghi từng trang, mở đầu mỗi trang bằng dòng "--- Trang N ---". Nếu một ảnh rõ ràng không thuộc bộ hồ sơ (khác bệnh nhân/cơ sở/ngày) thì thêm warning nêu số trang đó."""
 
 
 def build_ocr_user_content(req: OcrRequest) -> list[dict]:
@@ -159,11 +160,21 @@ def build_ocr_user_content(req: OcrRequest) -> list[dict]:
         "other": "",
         None: "",
     }[req.hint_type]
-    text = "Đọc và bóc tách tài liệu y tế trong ảnh này theo schema. " + hint
-    return [
-        {
-            "type": "image_url",
-            "image_url": {"url": f"data:{req.mime_type};base64,{req.image_base64}"},
-        },
-        {"type": "text", "text": text.strip()},
-    ]
+    n = len(req.images)
+    text = (
+        f"Đọc và bóc tách bộ hồ sơ y tế gồm {n} trang ảnh dưới đây (theo thứ tự) thành MỘT kết quả theo schema. "
+        if n > 1
+        else "Đọc và bóc tách tài liệu y tế trong ảnh này theo schema. "
+    ) + hint
+    content: list[dict] = []
+    for i, img in enumerate(req.images, start=1):
+        if n > 1:
+            content.append({"type": "text", "text": f"Trang {i}/{n}:"})
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{img.mime_type};base64,{img.image_base64}"},
+            }
+        )
+    content.append({"type": "text", "text": text.strip()})
+    return content

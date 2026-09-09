@@ -13,8 +13,9 @@ export const validate =
     if (!result.success) {
       return next(ApiError.badRequest('Dữ liệu không hợp lệ', result.error.issues))
     }
-    const data = result.data as { body?: unknown; query?: unknown }
+    const data = result.data as { body?: unknown; query?: unknown; params?: unknown }
     if (data.body !== undefined) req.body = data.body
     if (data.query !== undefined) res.locals.query = data.query
+    if (data.params !== undefined) res.locals.params = data.params
     next()
   }

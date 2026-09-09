@@ -46,7 +46,9 @@ export function RecordDetailPage() {
     (s) => s.records,
   )
   const record = current?.id === id ? current : null
-  const { url: imageUrl, error: imageError } = useRecordImage(record ? id : null)
+  const [page, setPage] = useState(0)
+  const pageCount = record?.pages.length ?? 0
+  const { url: imageUrl, error: imageError } = useRecordImage(record ? id : null, page)
 
   const [form, setForm] = useState<FormState | null>(null)
   const [zoom, setZoom] = useState(false)
@@ -167,7 +169,9 @@ export function RecordDetailPage() {
         {/* Ảnh gốc */}
         <div className="rounded-card bg-surface self-start border border-neutral-200 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-heading text-primary text-sm font-semibold">Ảnh gốc</span>
+            <span className="font-heading text-primary text-sm font-semibold">
+              Ảnh gốc{pageCount > 1 ? ` · trang ${page + 1}/${pageCount}` : ''}
+            </span>
             {imageUrl && (
               <button
                 type="button"
@@ -192,6 +196,26 @@ export function RecordDetailPage() {
             </div>
           ) : (
             <div className="h-64 animate-pulse rounded-lg bg-neutral-200" />
+          )}
+          {pageCount > 1 && (
+            <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Trang ảnh">
+              {record.pages.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === page}
+                  onClick={() => setPage(i)}
+                  className={
+                    i === page
+                      ? 'bg-primary rounded-md px-3 py-1 text-xs font-semibold text-white'
+                      : 'hover:border-primary rounded-md border border-neutral-300 px-3 py-1 text-xs text-neutral-700'
+                  }
+                >
+                  Trang {i + 1}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

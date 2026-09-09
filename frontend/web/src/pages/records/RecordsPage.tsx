@@ -40,8 +40,8 @@ export function RecordsPage() {
     })
   }, [items, q, year])
 
-  const onUpload = async (file: File, type?: RecordType) => {
-    const result = await dispatch(uploadRecord({ file, type }))
+  const onUpload = async (files: File[], type?: RecordType) => {
+    const result = await dispatch(uploadRecord({ files, type }))
     if (uploadRecord.fulfilled.match(result)) {
       navigate(ROUTES.RECORD_DETAIL.replace(':id', result.payload.id))
     }

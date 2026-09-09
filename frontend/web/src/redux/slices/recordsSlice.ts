@@ -63,11 +63,11 @@ export const fetchRecord = createAsyncThunk<MedicalRecord, string, { rejectValue
 
 export const uploadRecord = createAsyncThunk<
   MedicalRecord,
-  { file: File; type?: RecordType },
+  { files: File[]; type?: RecordType },
   { rejectValue: string }
->('records/upload', async ({ file, type }, { rejectWithValue }) => {
+>('records/upload', async ({ files, type }, { rejectWithValue }) => {
   try {
-    return (await recordService.upload(file, type)).data
+    return (await recordService.upload(files, type)).data
   } catch (err) {
     return rejectWithValue(reject(err, 'Tải ảnh thất bại'))
   }

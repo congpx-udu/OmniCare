@@ -18,15 +18,23 @@ const medicationSchema = new Schema(
   { _id: false },
 )
 
+const pageSchema = new Schema(
+  {
+    path: { type: String, required: true },
+    mime: { type: String, required: true },
+    size: { type: Number, required: true },
+  },
+  { _id: false },
+)
+
 const medicalRecordSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: { type: String, enum: RECORD_TYPES, default: 'other' },
     status: { type: String, enum: RECORD_STATUSES, default: 'pending', index: true },
     // Ảnh gốc: đường dẫn trong thư mục uploads/, chỉ phục vụ qua GET /records/:id/image (có auth)
-    imagePath: { type: String, required: true },
-    imageMime: { type: String, required: true },
-    imageSize: { type: Number, required: true },
+    // Các trang ảnh của cùng một bộ hồ sơ, theo thứ tự upload
+    pages: { type: [pageSchema], required: true },
     // Dữ liệu bóc tách, người dùng có thể sửa tay
     facility: { type: String, trim: true },
     doctor: { type: String, trim: true },

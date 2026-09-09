@@ -5,7 +5,7 @@ export const ENDPOINTS = {
     LIST: '/records',
     UPLOAD: '/records/upload',
     DETAIL: (id: string) => `/records/${id}`,
-    IMAGE: (id: string) => `/records/${id}/image`,
+    IMAGE: (id: string, page = 0) => `/records/${id}/image/${page}`,
     REPROCESS: (id: string) => `/records/${id}/reprocess`,
   },
   PROFILE: { GET: '/profile', UPDATE: '/profile' },

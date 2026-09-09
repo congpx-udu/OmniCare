@@ -5,8 +5,9 @@ import { created, ok } from '../utils/response.js'
 import type { ListRecordsQuery } from '../validators/record.validator.js'
 
 export async function upload(req: Request, res: Response) {
-  if (!req.file) throw ApiError.badRequest('Vui lòng chọn ảnh (trường "image")')
-  const record = await recordService.uploadRecord(req.userId!, req.file, req.body)
+  const files = (req.files as Express.Multer.File[] | undefined) ?? []
+  if (!files.length) throw ApiError.badRequest('Vui lòng chọn ít nhất một ảnh (trường "images")')
+  const record = await recordService.uploadRecord(req.userId!, files, req.body)
   created(res, record, 'Đã đọc xong, vui lòng kiểm tra và xác nhận')
 }
 
@@ -20,9 +21,11 @@ export async function detail(req: Request, res: Response) {
 }
 
 export async function image(req: Request, res: Response) {
+  const params = res.locals.params as { id: string; page: number }
   const { absolutePath, mime } = await recordService.getRecordImage(
     req.userId!,
-    req.params.id as string,
+    params.id,
+    params.page,
   )
   res.type(mime)
   res.setHeader('Cache-Control', 'private, max-age=3600')

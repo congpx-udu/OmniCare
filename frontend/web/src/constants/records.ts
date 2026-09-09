@@ -20,3 +20,5 @@ export const RECORD_STATUS_LABELS: Record<
 /** Ảnh cho phép upload (trùng với middleware backend) */
 export const RECORD_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 export const RECORD_IMAGE_MAX_MB = 10
+/** Số trang tối đa một bộ hồ sơ (trùng backend) */
+export const RECORD_MAX_PAGES = 8

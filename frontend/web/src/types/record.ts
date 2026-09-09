@@ -26,8 +26,8 @@ export interface MedicalRecord {
   confidence: number | null
   warnings: string[]
   errorMessage: string | null
-  imageMime: string
-  imageSize: number
+  /** Các trang ảnh, xem qua /records/:id/image/:page */
+  pages: Array<{ mime: string; size: number }>
   createdAt: string
   updatedAt: string
 }

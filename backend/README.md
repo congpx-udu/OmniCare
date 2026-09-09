@@ -153,8 +153,8 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | POST 🔒 | `/chat` | ⏱ 30/15 phút/IP (prod). `{ mode: food\|symptom, message, feeling?, location?: {lat,lon}\|{city} }` → `{ userMessage, assistantMessage (meta: riskLevel, meals, possibleConditions...), disclaimer }`. Gom hồ sơ ẩn danh + thời tiết + 10 tin gần nhất gửi AI | ✅ |
 | GET 🔒 | `/chat/history?mode=&limit=` | Lịch sử một luồng, cũ → mới | ✅ |
 | DELETE 🔒 | `/chat/history?mode=` | Xóa lịch sử một luồng | ✅ |
-| POST 🔒 | `/records/upload` | ⏱ 20/giờ/IP (prod). multipart `image` (JPEG/PNG/WEBP ≤10MB) + `type?`. Lưu ảnh, gọi AI `/ocr` (Gemini vision), trả record `status: needs_review` (hoặc `failed` kèm `errorMessage`) | ✅ |
-| GET 🔒 | `/records/:id/image` | Ảnh gốc (chỉ chủ sở hữu) | ✅ |
+| POST 🔒 | `/records/upload` | ⏱ 20/giờ/IP (prod). multipart `images[]` (1–8 trang cùng bộ hồ sơ, mỗi ảnh JPEG/PNG/WEBP ≤10MB) + `type?`. Lưu ảnh, gọi AI `/ocr` một lần cho tất cả trang và gộp thành một kết quả, trả record `status: needs_review` (hoặc `failed` kèm `errorMessage`) | ✅ |
+| GET 🔒 | `/records/:id/image/:page` | Ảnh trang thứ `page` (0-based, chỉ chủ sở hữu) | ✅ |
 | POST 🔒 | `/records/:id/reprocess` | OCR lại ảnh đã lưu | ✅ |
 | GET 🔒 | `/records?year=&q=&limit=`, `/records/:id` | Danh sách theo ngày khám giảm dần (`q` tìm chẩn đoán, cơ sở, tên thuốc, ghi chú), chi tiết | ✅ |
 | PUT/DELETE 🔒 | `/records/:id` | Sửa tay `{ type?, facility?, doctor?, visitDate?, diagnosis?, medications?[], notes?, confirm? }` (`confirm: true` → `done`) / xóa hồ sơ và ảnh | ✅ |
