@@ -32,7 +32,7 @@ Hoặc bằng Docker ở thư mục gốc repo: `docker compose up -d --build ai
 | `AI_ENV` | `development` | `development` / `production` |
 | `AI_PORT` | `8000` | Cổng uvicorn (chỉ dùng khi chạy tay) |
 | `LLM_API_KEY` | | Khóa API LLM (GLM/Zhipu hoặc nhà cung cấp OpenAI-compatible), cần cho `/chat` |
-| `LLM_BASE_URL` | `https://open.bigmodel.cn/api/paas/v4` | Base URL API chat/completions. Gemini: `https://generativelanguage.googleapis.com/v1beta/openai` (model `gemini-3.6-flash`) |
+| `LLM_BASE_URL` | `https://open.bigmodel.cn/api/paas/v4` | Base URL API chat/completions. Gemini: `https://generativelanguage.googleapis.com/v1beta/openai` (model `gemini-3.5-flash-lite`) |
 | `LLM_MODEL` | `glm-4.7` | Tên model |
 | `LLM_TIMEOUT` | `20` | Timeout mỗi lần gọi (giây), retry 1 lần |
 | `LLM_MAX_TOKENS` | `2000` | Giới hạn token trả về |
