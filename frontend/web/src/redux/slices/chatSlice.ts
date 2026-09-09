@@ -27,6 +27,8 @@ const emptyThread = (): ThreadState => ({
   error: null,
 })
 
+const pendingId = (requestId: string) => `pending-${requestId}`
+
 const initialState: ChatState = {
   activeMode: 'symptom',
   threads: { food: emptyThread(), symptom: emptyThread() },
@@ -106,19 +108,31 @@ const chatSlice = createSlice({
         t.error = action.payload?.message ?? 'Không tải được lịch sử'
       })
       .addCase(sendChat.pending, (state, action) => {
-        const t = state.threads[action.meta.arg.mode]
+        const { mode, message } = action.meta.arg
+        const t = state.threads[mode]
         t.sending = true
         t.error = null
+        // Hiện ngay tin của người dùng (optimistic); thay bằng bản đã lưu khi AI trả lời
+        t.messages.push({
+          id: pendingId(action.meta.requestId),
+          mode,
+          role: 'user',
+          content: message,
+          meta: null,
+          createdAt: new Date().toISOString(),
+        })
       })
       .addCase(sendChat.fulfilled, (state, action) => {
         const t = state.threads[action.payload.mode]
         t.sending = false
+        t.messages = t.messages.filter((m) => m.id !== pendingId(action.meta.requestId))
         t.messages.push(action.payload.result.userMessage, action.payload.result.assistantMessage)
       })
       .addCase(sendChat.rejected, (state, action) => {
         const mode = action.payload?.mode ?? action.meta.arg.mode
         const t = state.threads[mode]
         t.sending = false
+        t.messages = t.messages.filter((m) => m.id !== pendingId(action.meta.requestId))
         t.error = action.payload?.message ?? 'Trợ lý AI chưa trả lời được, thử lại sau'
       })
       .addCase(clearThread.fulfilled, (state, action) => {
