@@ -158,6 +158,7 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
 | PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
 | GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |
+| GET 🔒 | `/context/weather/insight?lat=&lon=` hoặc `?city=` | "Ảnh hưởng đến bạn": AI đọc thời tiết + hồ sơ + buổi trong ngày → `{ summary, tips[], mealIdea, activityIdea, timeOfDay, disclaimer }`. Cache 30 phút theo user/vị trí/buổi | ✅ |
 
 ### Định dạng response
 

@@ -6,10 +6,16 @@ import type { WeatherSnapshot } from '@/types'
 interface WeatherSummaryCardProps {
   data: WeatherSnapshot | null
   loading?: boolean
+  /** Một câu "ảnh hưởng đến bạn" nếu đã có */
+  insightSummary?: string | null
 }
 
 /** Thẻ thời tiết gọn cho Dashboard; khi chưa có dữ liệu thì mời sang trang Thời tiết */
-export function WeatherSummaryCard({ data, loading = false }: WeatherSummaryCardProps) {
+export function WeatherSummaryCard({
+  data,
+  loading = false,
+  insightSummary = null,
+}: WeatherSummaryCardProps) {
   if (!data) {
     return (
       <Link
@@ -44,6 +50,7 @@ export function WeatherSummaryCard({ data, loading = false }: WeatherSummaryCard
           Độ ẩm {current.humidity}% · Gió {Math.round(current.windKmh)} km/h
           {today && today.pop > 0 ? ` · Mưa ${Math.round(today.pop * 100)}%` : ''}
         </p>
+        {insightSummary && <p className="text-primary mt-1 text-sm">{insightSummary}</p>}
       </div>
     </Link>
   )

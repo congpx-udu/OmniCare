@@ -4,7 +4,7 @@ import { logger } from '../config/logger.js'
 import { ChatMessage, type ChatMode } from '../models/ChatMessage.js'
 import { ApiError } from '../utils/ApiError.js'
 import type { ChatHistoryQuery, SendChatInput } from '../validators/chat.validator.js'
-import { getWeather, type WeatherSnapshot } from './context.service.js'
+import { getWeather, localTime, weatherContext } from './context.service.js'
 import { getProfile } from './profile.service.js'
 
 /** Số tin gần nhất (cả hai vai) gửi kèm cho AI để giữ mạch hội thoại */
@@ -84,18 +84,6 @@ function toPublicMessage(m: MessageSource): PublicChatMessage {
 
 // ---------- Gom ngữ cảnh (ẩn danh: không tên, SĐT, email) ----------
 
-function weatherContext(w: WeatherSnapshot) {
-  return {
-    location: w.location.name,
-    temp: w.current.temp,
-    feels_like: w.current.feelsLike,
-    humidity: w.current.humidity,
-    description: w.current.description,
-    wind_kmh: w.current.windKmh,
-    rain_chance: w.daily[0]?.pop ?? null,
-  }
-}
-
 async function safeWeather(location: SendChatInput['location']) {
   if (!location) return null
   try {
@@ -134,26 +122,6 @@ async function callAi(payload: unknown): Promise<AiResponse> {
     throw new ApiError(502, 'Phản hồi của trợ lý AI không hợp lệ')
   }
   return parsed.data
-}
-
-/** Giờ địa phương tại vị trí người dùng (theo offset thời tiết), mặc định giờ Việt Nam */
-function localTime(weather: WeatherSnapshot | null) {
-  const offsetSec = weather?.timezoneOffset ?? 7 * 3600
-  const d = new Date(Date.now() + offsetSec * 1000)
-  const h = d.getUTCHours()
-  const hh = String(h).padStart(2, '0')
-  const mm = String(d.getUTCMinutes()).padStart(2, '0')
-  const period =
-    h < 5 || h >= 21
-      ? 'đêm khuya'
-      : h < 10
-        ? 'buổi sáng'
-        : h < 14
-          ? 'buổi trưa'
-          : h < 17
-            ? 'buổi chiều'
-            : 'buổi tối'
-  return { local_time: `${hh}:${mm}`, time_of_day: period }
 }
 
 // ---------- Public API ----------

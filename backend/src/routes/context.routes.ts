@@ -9,3 +9,8 @@ export const contextRouter = Router()
 
 contextRouter.use(requireAuth)
 contextRouter.get('/weather', validate(weatherQuerySchema), asyncHandler(ctrl.weather))
+contextRouter.get(
+  '/weather/insight',
+  validate(weatherQuerySchema),
+  asyncHandler(ctrl.weatherInsight),
+)

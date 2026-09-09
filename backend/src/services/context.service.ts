@@ -316,6 +316,60 @@ export async function getWeather(query: WeatherQuery): Promise<WeatherSnapshot> 
   return snapshot
 }
 
+// ---------- Ngữ cảnh gửi AI (dùng chung cho chat và insight) ----------
+
+/** Rút gọn snapshot thành ngữ cảnh thời tiết cho AI service */
+export function weatherContext(w: WeatherSnapshot) {
+  return {
+    location: w.location.name,
+    temp: w.current.temp,
+    feels_like: w.current.feelsLike,
+    humidity: w.current.humidity,
+    description: w.current.description,
+    wind_kmh: w.current.windKmh,
+    rain_chance: w.daily[0]?.pop ?? null,
+  }
+}
+
+/** Giờ địa phương tại vị trí (theo offset thời tiết), mặc định giờ Việt Nam; kèm buổi trong ngày */
+export function localTime(weather: WeatherSnapshot | null) {
+  const offsetSec = weather?.timezoneOffset ?? 7 * 3600
+  const d = new Date(Date.now() + offsetSec * 1000)
+  const h = d.getUTCHours()
+  const hh = String(h).padStart(2, '0')
+  const mm = String(d.getUTCMinutes()).padStart(2, '0')
+  const period =
+    h < 5 || h >= 21
+      ? 'đêm khuya'
+      : h < 10
+        ? 'buổi sáng'
+        : h < 14
+          ? 'buổi trưa'
+          : h < 17
+            ? 'buổi chiều'
+            : 'buổi tối'
+  return { local_time: `${hh}:${mm}`, time_of_day: period, hour: h }
+}
+
+/** Một câu mô tả dự báo ngắn hạn để AI nhắc trước (mốc 3h tiếp theo + ngày mai) */
+export function forecastNote(w: WeatherSnapshot) {
+  const parts: string[] = []
+  const next = w.hourly[1] ?? w.hourly[0]
+  if (next) {
+    parts.push(
+      `3 giờ tới ${Math.round(next.temp)}°C, ${next.description.toLowerCase()}` +
+        (next.pop >= 0.3 ? `, khả năng mưa ${Math.round(next.pop * 100)}%` : ''),
+    )
+  }
+  const tomorrow = w.daily[1]
+  if (tomorrow) {
+    parts.push(
+      `ngày mai ${Math.round(tomorrow.tempMin)}-${Math.round(tomorrow.tempMax)}°C, ${tomorrow.description.toLowerCase()}`,
+    )
+  }
+  return parts.join('; ') || null
+}
+
 /** Dùng cho test / khi đổi API key */
 export function clearWeatherCache() {
   cache.clear()

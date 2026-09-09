@@ -45,8 +45,9 @@ app/
 ├── config.py         Settings đọc từ env (.env qua python-dotenv)
 ├── routers/
 │   ├── health.py     GET /health
-│   └── chat.py       POST /chat — hai luồng food / symptom, output JSON ép schema
-├── schemas/chat.py   ChatRequest / ChatResponse
+│   ├── chat.py       POST /chat — hai luồng food / symptom, output JSON ép schema
+│   └── insight.py    POST /insights/weather — "ảnh hưởng đến bạn" theo hồ sơ + giờ trong ngày
+├── schemas/          chat.py, insight.py
 └── services/
     ├── llm.py        Client chat/completions (urllib), ép JSON, retry
     └── prompts.py    System prompt + ngữ cảnh (hồ sơ ẩn danh, thời tiết, cảm nhận)
@@ -56,7 +57,11 @@ app/
 
 Body: `{ mode: "food" | "symptom", messages: [{role, content}], profile?: {age, gender, height_cm, weight_kg, bmi, chronic_conditions[], allergies[]}, weather?: {location, temp, feels_like, humidity, description, rain_chance}, feeling?, records_summary? }`.
 
-Trả: `{ mode, reply, risk_level, possible_conditions[], suggested_specialty, facility_type, follow_up_questions[], meals[], activities[], disclaimer, model, latency_ms }`. Lỗi LLM: 503 (chưa cấu hình / key sai / quá tải), 502 (phản hồi lỗi), 504 (timeout).
+Trả: `{ mode, reply, risk_level, possible_conditions[], suggested_specialty, facility_type, follow_up_questions[], meals[], activities[], disclaimer, model, latency_ms }`.
+
+## POST /insights/weather
+
+Body: `{ profile?, weather, forecast_note?, local_time?, time_of_day? }` → `{ summary, tips[{title, detail}], meal_idea, activity_idea, disclaimer, model, latency_ms }`. Gợi ý bữa ăn/vận động bám theo buổi trong ngày. Lỗi LLM: 503 (chưa cấu hình / key sai / quá tải), 502 (phản hồi lỗi), 504 (timeout).
 
 Thêm endpoint mới: tạo `app/routers/<domain>.py` với `APIRouter`, schema request/response bằng Pydantic, rồi `include_router` trong `main.py`.
 

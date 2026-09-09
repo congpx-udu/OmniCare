@@ -15,8 +15,8 @@ Dịch vụ AI/OCR của **OmniCare**, Python 3.12 + FastAPI. Backend Express (`
 | `app/main.py` | Tạo app, include router. Không viết logic ở đây. |
 | `app/config.py` | `settings` đọc env. Biến mới phải thêm vào `.env.example`. |
 | `app/routers/<domain>.py` | `APIRouter` + schema Pydantic cho từng domain (`health`, `chat`, `ocr`). |
-| `app/services/` | `llm.py` (client chat/completions, ép JSON, retry 1 lần), `prompts.py` (system prompt hai luồng food/symptom). |
-| `app/schemas/` | `chat.py`: ChatRequest/ChatResponse. |
+| `app/services/` | `llm.py` (client chat/completions, ép JSON, retry 1 lần), `prompts.py` (system prompt hai luồng food/symptom + insight thời tiết). |
+| `app/schemas/` | `chat.py`: ChatRequest/ChatResponse; `insight.py`: WeatherInsightRequest/Response. |
 
 ## Quy tắc sản phẩm y tế
 

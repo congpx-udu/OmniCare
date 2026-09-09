@@ -1,6 +1,7 @@
 """System prompt cho hai luồng chat. Không chẩn đoán, không kê đơn, luôn có red flags."""
 
 from app.schemas.chat import ChatRequest, ProfileContext, WeatherContext
+from app.schemas.insight import WeatherInsightRequest
 
 _COMMON = """Bạn là trợ lý sức khỏe OmniCare, nói tiếng Việt tự nhiên, ngắn gọn, thân thiện, xưng "mình" và gọi người dùng là "bạn".
 Nguyên tắc bắt buộc:
@@ -93,3 +94,33 @@ def build_system_prompt(req: ChatRequest) -> str:
         else "Nhiệm vụ: lắng nghe cảm nhận cơ thể, hỏi lại khi cần, nêu nhóm vấn đề có thể liên quan, đánh giá mức độ và hướng đi khám."
     )
     return "\n\n".join([_COMMON, task, "\n".join(ctx), schema])
+
+
+# ---------- "Ảnh hưởng đến bạn" (trang Thời tiết) ----------
+
+_INSIGHT_SYSTEM = """Bạn là trợ lý sức khỏe OmniCare. Nhiệm vụ: từ thời tiết hôm nay và hồ sơ ẩn danh của người dùng, nêu ngắn gọn thời tiết này ảnh hưởng gì đến họ và nên làm gì vào thời điểm hiện tại.
+Nguyên tắc: không chẩn đoán, không kê đơn, không nêu tên thuốc kèm liều; lời khuyên chung, thực tế, tiếng Việt thân thiện, xưng "mình" gọi "bạn". Không nhắc tên/SĐT/email. Không bịa.
+Ưu tiên gắn với bệnh nền và dị ứng nếu có (ví dụ: tăng huyết áp khi nắng nóng hoặc lạnh đột ngột; hen suyễn/viêm mũi khi độ ẩm cao, mưa, phấn hoa; đái tháo đường khi vận động ngoài trời nóng; người lớn tuổi khi trời lạnh). Không có bệnh nền thì nêu lưu ý chung phù hợp tuổi và BMI.
+Theo thời điểm trong ngày: buổi sáng thì gợi ý bữa sáng và vận động buổi sáng; buổi trưa/chiều thì bữa trưa hoặc bữa xế và vận động tránh giờ nắng gắt; buổi tối thì bữa tối nhẹ và vận động nhẹ trước khi ngủ; đêm khuya thì nghỉ ngơi, hạn chế ăn khuya. Nếu dự báo sắp mưa hoặc thay đổi nhiệt độ thì nhắc chuẩn bị trước.
+Trả lời CHỈ bằng JSON hợp lệ theo schema:
+{
+  "summary": "1 câu (≤ 30 từ) tóm tắt thời tiết hôm nay ảnh hưởng gì đến bạn",
+  "tips": [{"title": "tiêu đề ≤ 6 từ", "detail": "1-2 câu cụ thể"}],
+  "meal_idea": "1 câu gợi ý bữa ăn cho thời điểm hiện tại, nêu rõ bữa nào, tránh dị ứng",
+  "activity_idea": "1 câu gợi ý vận động cho thời điểm hiện tại, nêu rõ khung giờ"
+}
+tips từ 2 đến 4 mục, không trùng nhau."""
+
+
+def build_insight_prompt(req: WeatherInsightRequest) -> tuple[str, str]:
+    """Trả (system, user) cho POST /insights/weather."""
+    ctx = ["Hồ sơ người dùng (ẩn danh):", *_profile_lines(req.profile)]
+    ctx += ["Thời tiết hiện tại:", *_weather_lines(req.weather)]
+    if req.forecast_note:
+        ctx.append(f"Dự báo tiếp theo: {req.forecast_note}")
+    if req.local_time or req.time_of_day:
+        when = req.local_time or ""
+        if req.time_of_day:
+            when = f"{when} ({req.time_of_day})".strip()
+        ctx.append(f"Giờ địa phương hiện tại: {when}")
+    return _INSIGHT_SYSTEM, "\n".join(ctx)

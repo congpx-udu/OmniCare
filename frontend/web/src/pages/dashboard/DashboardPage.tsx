@@ -73,7 +73,11 @@ export function DashboardPage() {
         </Alert>
       )}
 
-      <WeatherSummaryCard data={weather.data} loading={weather.status === 'loading'} />
+      <WeatherSummaryCard
+        data={weather.data}
+        loading={weather.status === 'loading'}
+        insightSummary={weather.insight?.summary ?? null}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {SHORTCUTS.map((s) => (

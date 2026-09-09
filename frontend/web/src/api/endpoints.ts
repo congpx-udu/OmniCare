@@ -7,5 +7,5 @@ export const ENDPOINTS = {
     DETAIL: (id: string) => `/records/${id}`,
   },
   PROFILE: { GET: '/profile', UPDATE: '/profile' },
-  CONTEXT: { WEATHER: '/context/weather' },
+  CONTEXT: { WEATHER: '/context/weather', WEATHER_INSIGHT: '/context/weather/insight' },
 } as const

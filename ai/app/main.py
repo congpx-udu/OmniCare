@@ -6,7 +6,7 @@
 from fastapi import FastAPI
 
 from app.config import settings
-from app.routers import chat, health
+from app.routers import chat, health, insight
 
 app = FastAPI(
     title="OmniCare AI Service",
@@ -16,6 +16,7 @@ app = FastAPI(
 
 app.include_router(health.router)
 app.include_router(chat.router)
+app.include_router(insight.router)
 
 
 @app.get("/", include_in_schema=False)

@@ -46,5 +46,17 @@ export interface WeatherSnapshot {
   cached: boolean
 }
 
+/** "Ảnh hưởng đến bạn" từ GET /context/weather/insight */
+export interface WeatherInsight {
+  summary: string
+  tips: Array<{ title: string; detail: string }>
+  mealIdea: string | null
+  activityIdea: string | null
+  timeOfDay: string
+  disclaimer: string
+  generatedAt: string
+  cached: boolean
+}
+
 /** Cách người dùng chọn vị trí: định vị trình duyệt hoặc nhập tay thành phố */
 export type WeatherLocationQuery = { lat: number; lon: number } | { city: string }

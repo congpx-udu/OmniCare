@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { STORAGE_KEYS } from '@/constants'
 import { logout } from '@/redux/slices/authSlice'
 import { contextService } from '@/services/contextService'
-import type { WeatherLocationQuery, WeatherSnapshot } from '@/types'
+import type { WeatherInsight, WeatherLocationQuery, WeatherSnapshot } from '@/types'
 import { getApiErrorMessage } from '@/utils/apiError'
 
 type Status = 'idle' | 'loading' | 'succeeded' | 'failed'
@@ -13,6 +13,10 @@ interface WeatherState {
   query: WeatherLocationQuery | null
   status: Status
   error: string | null
+  /** Khối "ảnh hưởng đến bạn" (AI), tải sau khi có thời tiết */
+  insight: WeatherInsight | null
+  insightStatus: Status
+  insightError: string | null
 }
 
 function readQuery(): WeatherLocationQuery | null {
@@ -38,6 +42,9 @@ const initialState: WeatherState = {
   query: readQuery(),
   status: 'idle',
   error: null,
+  insight: null,
+  insightStatus: 'idle',
+  insightError: null,
 }
 
 export const fetchWeather = createAsyncThunk<
@@ -53,6 +60,19 @@ export const fetchWeather = createAsyncThunk<
   }
 })
 
+export const fetchWeatherInsight = createAsyncThunk<
+  WeatherInsight,
+  WeatherLocationQuery,
+  { rejectValue: string }
+>('weather/fetchInsight', async (query, { rejectWithValue }) => {
+  try {
+    const res = await contextService.weatherInsight(query)
+    return res.data
+  } catch (err) {
+    return rejectWithValue(getApiErrorMessage(err, 'Không lấy được lưu ý từ trợ lý AI'))
+  }
+})
+
 const weatherSlice = createSlice({
   name: 'weather',
   initialState,
@@ -65,7 +85,7 @@ const weatherSlice = createSlice({
     builder
       .addCase(logout, () => {
         writeQuery(null)
-        return { data: null, query: null, status: 'idle', error: null }
+        return { ...initialState, query: null }
       })
       .addCase(fetchWeather.pending, (state) => {
         state.status = 'loading'
@@ -76,10 +96,26 @@ const weatherSlice = createSlice({
         state.data = action.payload.data
         state.query = action.payload.query
         writeQuery(action.payload.query)
+        // Đổi vị trí thì lưu ý cũ không còn đúng
+        state.insight = null
+        state.insightStatus = 'idle'
+        state.insightError = null
       })
       .addCase(fetchWeather.rejected, (state, action) => {
         state.status = 'failed'
         state.error = action.payload ?? 'Không lấy được dữ liệu thời tiết'
+      })
+      .addCase(fetchWeatherInsight.pending, (state) => {
+        state.insightStatus = 'loading'
+        state.insightError = null
+      })
+      .addCase(fetchWeatherInsight.fulfilled, (state, action) => {
+        state.insightStatus = 'succeeded'
+        state.insight = action.payload
+      })
+      .addCase(fetchWeatherInsight.rejected, (state, action) => {
+        state.insightStatus = 'failed'
+        state.insightError = action.payload ?? 'Không lấy được lưu ý từ trợ lý AI'
       })
   },
 })
