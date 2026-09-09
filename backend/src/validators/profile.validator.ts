@@ -44,6 +44,10 @@ export const updateProfileSchema = z.object({
       .nullable()
       .optional(),
     dateOfBirth: dateOfBirthSchema.nullable().optional(),
+    gender: z
+      .enum(['male', 'female', 'other'], { error: 'Giới tính không hợp lệ' })
+      .nullable()
+      .optional(),
     chronicConditions: tagListSchema.optional(),
     allergies: tagListSchema.optional(),
   }),

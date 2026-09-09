@@ -1,4 +1,4 @@
-import { BMI_LABELS } from '@/constants'
+import { BMI_LABELS, GENDER_OPTIONS } from '@/constants'
 import type { HealthProfile } from '@/types'
 import { cn } from '@/utils'
 
@@ -26,6 +26,11 @@ export function ProfileSummary({ profile }: ProfileSummaryProps) {
       sub: profile.age !== null ? 'tuổi' : 'Cần ngày sinh',
     },
     {
+      title: 'Giới tính',
+      value: GENDER_OPTIONS.find((g) => g.value === profile.gender)?.label ?? '—',
+      sub: profile.gender ? 'đã khai báo' : 'Chưa khai báo',
+    },
+    {
       title: 'Bệnh nền',
       value: String(profile.chronicConditions.length),
       sub: profile.chronicConditions.length ? 'mục đã khai báo' : 'Chưa khai báo',
@@ -37,7 +42,7 @@ export function ProfileSummary({ profile }: ProfileSummaryProps) {
     },
   ]
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {stats.map((s) => (
         <div key={s.title} className="rounded-card bg-surface border border-neutral-200 p-4">
           <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">

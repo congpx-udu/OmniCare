@@ -149,10 +149,11 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | GET 🔒 | `/auth/me` | Thông tin người dùng hiện tại | ✅ |
 | POST 🔒 | `/chat` | Gửi triệu chứng/cảm nhận, nhận phân tích + gợi ý | ⏳ |
 | GET 🔒 | `/chat/history` | Lịch sử chat | ⏳ |
-| POST 🔒 | `/ocr/upload` | Upload ảnh đơn thuốc (multipart `image`) | ⏳ |
-| GET 🔒 | `/ocr/:id` | Kết quả OCR đã bóc tách | ⏳ |
+| POST 🔒 | `/records/upload` | Upload ảnh bệnh án/đơn thuốc (multipart `image`), tạo MedicalRecord và gọi OCR | ⏳ |
+| GET 🔒 | `/records`, `/records/:id` | Timeline hồ sơ bệnh án, chi tiết kết quả OCR | ⏳ |
+| PUT/DELETE 🔒 | `/records/:id` | Sửa tay dữ liệu bóc tách / xóa | ⏳ |
 | GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
-| PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
+| PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
 | GET 🔒 | `/context/weather?lat=&lng=` | Thời tiết hiện tại tại vị trí | ⏳ |
 
 ### Định dạng response

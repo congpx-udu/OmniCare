@@ -21,6 +21,13 @@ export const ALLERGY_SUGGESTIONS = [
   'Aspirin',
 ] as const
 
+export const GENDER_OPTIONS: ReadonlyArray<{ value: 'male' | 'female' | 'other'; label: string }> =
+  [
+    { value: 'male', label: 'Nam' },
+    { value: 'female', label: 'Nữ' },
+    { value: 'other', label: 'Khác' },
+  ]
+
 /** Phân loại BMI (ngưỡng WHO cho người châu Á), chỉ dùng để gắn nhãn hiển thị */
 export const BMI_LABELS: ReadonlyArray<{ max: number; label: string; tone: string }> = [
   { max: 18.5, label: 'Thiếu cân', tone: 'text-warning' },

@@ -1,10 +1,13 @@
 import { HealthProfile } from '../models/HealthProfile.js'
 import type { UpdateProfileInput } from '../validators/profile.validator.js'
 
+type Gender = 'male' | 'female' | 'other'
+
 interface ProfileSource {
   heightCm?: number | null
   weightKg?: number | null
   dateOfBirth?: Date | null
+  gender?: string | null
   chronicConditions?: string[]
   allergies?: string[]
   updatedAt?: Date
@@ -32,6 +35,7 @@ function toPublicProfile(p: ProfileSource | null) {
   const heightCm = p?.heightCm ?? null
   const weightKg = p?.weightKg ?? null
   const dateOfBirth = p?.dateOfBirth ?? null
+  const gender = (p?.gender as Gender | undefined) ?? null
   const chronicConditions = p?.chronicConditions ?? []
   const allergies = p?.allergies ?? []
   const isComplete = heightCm !== null && weightKg !== null && dateOfBirth !== null
@@ -39,6 +43,7 @@ function toPublicProfile(p: ProfileSource | null) {
     heightCm,
     weightKg,
     dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().slice(0, 10) : null,
+    gender,
     chronicConditions,
     allergies,
     bmi: calcBmi(heightCm, weightKg),

@@ -30,6 +30,7 @@ export const profileFormSchema = z.object({
         .refine((d) => d <= today(), 'Ngày sinh không được ở tương lai')
         .nullable(),
     ),
+  gender: z.enum(['male', 'female', 'other']).nullable(),
   chronicConditions: z
     .array(z.string().trim().min(1).max(60, 'Mỗi mục tối đa 60 ký tự'))
     .max(30, 'Tối đa 30 mục'),

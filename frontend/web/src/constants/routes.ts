@@ -6,6 +6,8 @@ export const ROUTES = {
   /** Trang đầu tiên sau khi đăng nhập (khu vực ứng dụng, sidebar trái) */
   DASHBOARD: '/dashboard',
   CHAT: '/chat',
-  OCR: '/ocr',
+  /** Hồ sơ bệnh án (upload + OCR) */
+  RECORDS: '/records',
+  RECORD_DETAIL: '/records/:id',
   PROFILE: '/profile',
 } as const

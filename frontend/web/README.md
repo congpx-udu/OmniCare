@@ -52,7 +52,7 @@ Trong lúc dev, mọi request tới `/api/*` được Vite proxy sang backend n�
 src/
 ├── api/                  Tầng HTTP thô
 │   ├── axiosClient.ts    Axios instance, interceptor gắn JWT, xử lý 401
-│   ├── endpoints.ts      Hằng đường dẫn API (AUTH, CHAT, OCR, PROFILE, CONTEXT)
+│   ├── endpoints.ts      Hằng đường dẫn API (AUTH, CHAT, RECORDS, PROFILE, CONTEXT)
 │   └── index.ts
 ├── assets/               Ảnh, icon, font
 ├── components/
@@ -76,12 +76,12 @@ src/
 │   │   ├── FeaturesSection.tsx  Màn 2: lưới 4 card (masked) + 4 thẻ tính năng
 │   │   ├── PersonasSection.tsx  Màn 3: card nền đặc + ảnh thường + 2 card đè
 │   │   └── ArrowIcon.tsx
-│   └── <domain>/         Component riêng từng domain (chat/, ocr/...), tạo khi cần
+│   └── <domain>/         Component riêng từng domain (chat/, records/...), tạo khi cần
 ├── constants/
 │   ├── app.ts            APP_NAME, MEDICAL_DISCLAIMER
 │   ├── nav.ts            APP_NAV (sidebar)
 │   ├── landing.ts        LANDING_IMAGES (ảnh, đang là placeholder), LANDING_MENU, HERO_BARS, FEATURE_CARDS
-│   ├── routes.ts         ROUTES.HOME (landing), DASHBOARD, CHAT, OCR, PROFILE, LOGIN, REGISTER
+│   ├── routes.ts         ROUTES.HOME (landing), DASHBOARD, CHAT, RECORDS, PROFILE, LOGIN, REGISTER
 │   ├── storage.ts        STORAGE_KEYS (key localStorage)
 │   └── index.ts
 ├── context/
@@ -104,7 +104,7 @@ src/
 │   ├── auth/LoginPage.tsx, RegisterPage.tsx
 │   ├── dashboard/DashboardPage.tsx   Trang đầu sau đăng nhập
 │   ├── chat/ChatPage.tsx
-│   ├── ocr/OcrPage.tsx
+│   ├── records/RecordsPage.tsx
 │   ├── health-profile/ProfilePage.tsx
 │   └── NotFoundPage.tsx
 ├── redux/
@@ -177,7 +177,7 @@ Quy tắc chi tiết dành cho AI/agent nằm trong `CLAUDE.md`.
 |---|---|---|---|
 | Landing (công khai) | `LandingLayout` | `/`, `*` | Navbar cố định: logo, nút Menu mở panel trượt (Trang chủ, Tính năng, Dành cho ai, Đăng nhập, Đăng ký); đã đăng nhập thì hiện "Vào ứng dụng" |
 | Auth | `AuthLayout` | `/login`, `/register` | — |
-| Ứng dụng (cần đăng nhập) | `RequireAuth` → `AppLayout` | `/dashboard`, `/chat`, `/ocr`, `/profile` | Sidebar trái 256px trên `lg`, drawer + topbar có nút menu dưới `lg` |
+| Ứng dụng (cần đăng nhập) | `RequireAuth` → `AppLayout` | `/dashboard`, `/chat`, `/records`, `/profile` | Sidebar trái 256px trên `lg`, drawer + topbar có nút menu dưới `lg` |
 
 Thêm mục sidebar: sửa `APP_NAV` trong `constants/nav.ts` (icon phải có trong `NavIcon`). Thêm mục menu landing: sửa `LANDING_MENU` trong `constants/landing.ts`.
 

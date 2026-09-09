@@ -14,8 +14,8 @@ const SHORTCUTS = [
     accent: 'bg-secondary',
   },
   {
-    to: ROUTES.OCR,
-    title: 'Số hóa đơn thuốc',
+    to: ROUTES.RECORDS,
+    title: 'Hồ sơ bệnh án',
     desc: 'Chụp đơn thuốc, bệnh án in máy để OCR và lưu hồ sơ.',
     accent: 'bg-tertiary',
   },
