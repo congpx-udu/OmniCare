@@ -15,7 +15,7 @@ REST API của **OmniCare – Trợ lý Sức khỏe Toàn diện AI**. Quản l
 | Validation | Zod 4 |
 | Auth | JWT (jsonwebtoken) + bcryptjs |
 | Upload | multer (ảnh ≤ 10MB) |
-| Bảo mật | helmet, cors |
+| Bảo mật | helmet, cors, express-rate-limit |
 | Logging | pino + pino-http |
 | Dev | tsx watch |
 
@@ -38,6 +38,19 @@ Kiểm tra nhanh:
 ```bash
 curl http://localhost:3000/api/health
 ```
+
+## Chạy bằng Docker
+
+```bash
+# ở thư mục gốc repo
+docker compose up -d --build          # Mongo + backend, http://localhost:3000/api
+docker compose logs -f backend
+docker compose down
+```
+
+`Dockerfile` build 2 stage: `npm ci` + `tsc` → image runtime chỉ chứa `dist/` và dependencies production, chạy `node dist/server.js` với user `node`, healthcheck gọi `/api/health`. Biến môi trường lấy từ `.env` qua `env_file` trong `docker-compose.yml`. Khi kết nối Mongo trong compose, dùng `MONGO_URI=mongodb://mongo:27017/omnicare`.
+
+Lỗi thường gặp: frontend báo `502 Bad Gateway` tại `/api/*` → backend chưa chạy trên cổng 3000.
 
 ## Scripts
 
@@ -76,14 +89,17 @@ src/
 │   └── logger.ts             pino, redact authorization/password/token
 ├── routes/
 │   ├── index.ts              apiRouter: /health, /auth, ...
-│   └── auth.routes.ts        POST /register, POST /login, GET /me
+│   ├── auth.routes.ts        POST /register, POST /login, GET /me
+│   ├── profile.routes.ts     GET /, PUT / (hồ sơ sức khỏe)
+│   └── context.routes.ts     GET /weather (thời tiết theo vị trí)
 ├── controllers/
 │   ├── auth.controller.ts    Nhận req, gọi service, trả ok()/created()
 │   └── health.controller.ts  Health check + trạng thái DB
 ├── services/
-│   └── auth.service.ts       register / login / me, hash mật khẩu, ký JWT
+│   ├── auth.service.ts       register / login / me, hash mật khẩu, ký JWT
+│   └── health.service.ts     Trạng thái DB + ping AI service (timeout 2s)
 ├── models/
-│   ├── User.ts               email, password (select:false), fullName
+│   ├── User.ts               phone (unique), email?, password (select:false), fullName
 │   ├── HealthProfile.ts      chiều cao, cân nặng, bệnh nền, dị ứng
 │   ├── ChatMessage.ts        lịch sử chat + context (thời tiết, vị trí, cảm nhận)
 │   └── MedicalRecord.ts      ảnh đơn thuốc/bệnh án, rawText, extracted, status
@@ -93,6 +109,7 @@ src/
 │   ├── auth.ts               requireAuth: đọc Bearer token, gắn req.userId
 │   ├── validate.ts           validate(schema) cho body/params/query
 │   ├── upload.ts             multer: JPEG/PNG/WEBP, ≤10MB, lưu uploads/
+│   ├── rateLimit.ts          loginLimiter, registerLimiter (express-rate-limit)
 │   └── errorHandler.ts       notFound + errorHandler (ApiError, Mongo 11000, 500)
 ├── utils/
 │   ├── ApiError.ts           Lỗi có statusCode + factory badRequest/unauthorized/...
@@ -127,16 +144,18 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 
 | Method | Path | Mô tả | Trạng thái |
 |---|---|---|---|
-| GET | `/health` | Trạng thái server và DB | ✅ |
-| POST | `/auth/register` | Đăng ký `{ email, password, fullName }` | ✅ |
-| POST | `/auth/login` | Đăng nhập `{ email, password }` → `{ token, user }` | ✅ |
+| GET | `/health` | Trạng thái server, DB và dịch vụ AI (`ai: ok | unreachable`) | ✅ |
+| POST | `/auth/register` | ⏱ 5/giờ/IP (prod). Đăng ký `{ fullName, phone, password, email? }` → `{ user }` (không trả token, client chuyển về trang đăng nhập) | ✅ |
+| POST | `/auth/login` | ⏱ 10/15 phút/IP (prod). Đăng nhập `{ phone, password }` → `{ token, user }`. `phone` nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx` | ✅ |
 | GET 🔒 | `/auth/me` | Thông tin người dùng hiện tại | ✅ |
 | POST 🔒 | `/chat` | Gửi triệu chứng/cảm nhận, nhận phân tích + gợi ý | ⏳ |
 | GET 🔒 | `/chat/history` | Lịch sử chat | ⏳ |
-| POST 🔒 | `/ocr/upload` | Upload ảnh đơn thuốc (multipart `image`) | ⏳ |
-| GET 🔒 | `/ocr/:id` | Kết quả OCR đã bóc tách | ⏳ |
-| GET/PUT 🔒 | `/profile` | Hồ sơ sức khỏe | ⏳ |
-| GET 🔒 | `/context/weather?lat=&lng=` | Thời tiết hiện tại tại vị trí | ⏳ |
+| POST 🔒 | `/records/upload` | Upload ảnh bệnh án/đơn thuốc (multipart `image`), tạo MedicalRecord và gọi OCR | ⏳ |
+| GET 🔒 | `/records`, `/records/:id` | Timeline hồ sơ bệnh án, chi tiết kết quả OCR | ⏳ |
+| PUT/DELETE 🔒 | `/records/:id` | Sửa tay dữ liệu bóc tách / xóa | ⏳ |
+| GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
+| PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
+| GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |
 
 ### Định dạng response
 
@@ -157,7 +176,8 @@ Lỗi:
 | 400 | Body/params/query không qua Zod |
 | 401 | Thiếu hoặc sai token, sai mật khẩu |
 | 404 | Không tìm thấy route hoặc bản ghi |
-| 409 | Trùng dữ liệu (email đã đăng ký) |
+| 409 | Trùng dữ liệu (số điện thoại hoặc email đã đăng ký) |
+| 429 | Vượt rate limit `/auth/*`, xem header `RateLimit-*` |
 | 500 | Lỗi không xử lý, stack chỉ hiện khi không phải production |
 
 ## Quy ước

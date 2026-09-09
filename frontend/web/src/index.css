@@ -1,14 +1,85 @@
 @import 'tailwindcss';
 
-/* Design tokens của OmniCare. Dùng bg-primary, text-primary... trong className */
+/*
+  Design tokens của OmniCare — bảng màu "Clinical Clarity" (docs/img/chủ đạo.png).
+  Dùng trực tiếp trong className: bg-primary, text-secondary, border-tertiary, text-neutral...
+  Mỗi màu có thang 50–900 (primary-100, secondary-700...) để làm nền, viền, hover.
+*/
 @theme {
-  --color-primary: #0f9d8a;
-  --color-primary-dark: #0b7d6e;
-  --color-primary-light: #e6f6f3;
-  --color-danger: #dc2626;
-  --color-warning: #f59e0b;
-  --color-success: #16a34a;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* Primary — navy, dùng cho tiêu đề, nút chính, header */
+  --color-primary: #0b2545;
+  --color-primary-50: #eef2f8;
+  --color-primary-100: #d9e1ee;
+  --color-primary-200: #b3c3dd;
+  --color-primary-300: #8aa2c6;
+  --color-primary-400: #5c7aa8;
+  --color-primary-500: #33547f;
+  --color-primary-600: #1c3a62;
+  --color-primary-700: #0b2545;
+  --color-primary-800: #081b33;
+  --color-primary-900: #051222;
+  --color-primary-dark: #081b33;
+  --color-primary-light: #eef2f8;
+
+  /* Secondary — teal (màu logo), dùng cho điểm nhấn, link, trạng thái tích cực */
+  --color-secondary: #007a78;
+  --color-secondary-50: #e6f7f6;
+  --color-secondary-100: #c2ecea;
+  --color-secondary-200: #8fdcd9;
+  --color-secondary-300: #5cc9c5;
+  --color-secondary-400: #2aaeaa;
+  --color-secondary-500: #0f9490;
+  --color-secondary-600: #007a78;
+  --color-secondary-700: #005f5d;
+  --color-secondary-800: #004543;
+  --color-secondary-900: #002c2b;
+  --color-secondary-dark: #005f5d;
+  --color-secondary-light: #e6f7f6;
+
+  /* Tertiary — sky blue, dùng cho thông tin, biểu đồ, focus ring */
+  --color-tertiary: #0284c7;
+  --color-tertiary-50: #e8f4fb;
+  --color-tertiary-100: #c6e4f6;
+  --color-tertiary-200: #95cdee;
+  --color-tertiary-300: #5fb3e4;
+  --color-tertiary-400: #2e9ad7;
+  --color-tertiary-500: #0284c7;
+  --color-tertiary-600: #026ba1;
+  --color-tertiary-700: #02527c;
+  --color-tertiary-800: #013a58;
+  --color-tertiary-900: #012436;
+  --color-tertiary-dark: #026ba1;
+  --color-tertiary-light: #e8f4fb;
+
+  /* Neutral — slate, dùng cho text phụ, viền, placeholder */
+  --color-neutral: #64748b;
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+
+  /* Nền & bề mặt */
+  --color-surface: #ffffff;
+  --color-surface-muted: #e6eef8;
+  --color-background: #eef3fa;
+
+  /* Trạng thái */
+  --color-danger: #b91c1c;
+  --color-warning: #d97706;
+  --color-success: #007a78;
+  --color-info: #0284c7;
+
+  /* Typography: Manrope cho headline/label, Plus Jakarta Sans cho body */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Manrope', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
 }
 
 @layer base {
@@ -16,6 +87,12 @@
     @apply antialiased;
   }
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-background font-sans text-neutral-900;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-primary font-bold tracking-tight;
   }
 }

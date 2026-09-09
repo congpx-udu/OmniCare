@@ -1,0 +1,59 @@
+# Hạ tầng dev cục bộ.
+#   docker compose up -d              -> Mongo + backend + ai
+#   docker compose up -d mongo        -> chỉ Mongo (chạy backend bằng npm run dev)
+#   docker compose up -d --build backend  -> build lại backend sau khi sửa code
+# Frontend chạy ngoài Docker trong giai đoạn dev (xem docs/plan/PLAN.md).
+services:
+  mongo:
+    image: mongo:7
+    container_name: omnicare-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: omnicare-backend
+    restart: unless-stopped
+    # Đọc toàn bộ biến từ backend/.env (MONGO_URI, JWT_SECRET, ...)
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Trong mạng Docker, dịch vụ AI có host là tên service "ai"
+      AI_SERVICE_URL: http://ai:8000
+      # Bỏ comment dòng dưới nếu muốn dùng Mongo trong compose thay vì Atlas.
+      # Trong mạng Docker, host của Mongo là tên service "mongo", không phải localhost.
+      # MONGO_URI: mongodb://mongo:27017/omnicare
+    ports:
+      - '3000:3000'
+    volumes:
+      - backend-uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+
+  ai:
+    build: ./ai
+    container_name: omnicare-ai
+    restart: unless-stopped
+    env_file:
+      - ./ai/.env
+    environment:
+      AI_ENV: production
+    ports:
+      - '8000:8000'
+
+volumes:
+  mongo-data:
+  backend-uploads:
