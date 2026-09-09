@@ -11,6 +11,7 @@ import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { ProfilePage } from '@/pages/health-profile/ProfilePage'
 import { LandingPage } from '@/pages/landing/LandingPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { RecordDetailPage } from '@/pages/records/RecordDetailPage'
 import { RecordsPage } from '@/pages/records/RecordsPage'
 import { WeatherPage } from '@/pages/weather/WeatherPage'
 
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
           { path: ROUTES.CHAT, element: <ChatPage /> },
           { path: ROUTES.WEATHER, element: <WeatherPage /> },
           { path: ROUTES.RECORDS, element: <RecordsPage /> },
+          { path: ROUTES.RECORD_DETAIL, element: <RecordDetailPage /> },
           { path: ROUTES.PROFILE, element: <ProfilePage /> },
         ],
       },

@@ -6,6 +6,7 @@ import { ApiError } from '../utils/ApiError.js'
 import type { ChatHistoryQuery, SendChatInput } from '../validators/chat.validator.js'
 import { getWeather, localTime, weatherContext } from './context.service.js'
 import { getProfile } from './profile.service.js'
+import { summarizeRecords } from './record.service.js'
 
 /** Số tin gần nhất (cả hai vai) gửi kèm cho AI để giữ mạch hội thoại */
 const HISTORY_FOR_AI = 10
@@ -127,9 +128,10 @@ async function callAi(payload: unknown): Promise<AiResponse> {
 // ---------- Public API ----------
 
 export async function sendMessage(userId: string, input: SendChatInput) {
-  const [profile, weather, recent] = await Promise.all([
+  const [profile, weather, recordsSummary, recent] = await Promise.all([
     getProfile(userId),
     safeWeather(input.location),
+    summarizeRecords(userId),
     ChatMessage.find({ user: userId, mode: input.mode })
       .sort({ createdAt: -1 })
       .limit(HISTORY_FOR_AI)
@@ -153,8 +155,8 @@ export async function sendMessage(userId: string, input: SendChatInput) {
     weather: weather ? weatherContext(weather) : null,
     feeling: input.feeling ?? null,
     ...localTime(weather),
-    // Giai đoạn 4 sẽ đưa tóm tắt MedicalRecord vào đây
-    records_summary: null,
+    // Tóm tắt bệnh án đã xác nhận (AI-03): chỉ ngày, chẩn đoán, tên thuốc
+    records_summary: recordsSummary,
   }
 
   const ai = await callAi(aiPayload)

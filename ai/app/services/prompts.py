@@ -2,6 +2,7 @@
 
 from app.schemas.chat import ChatRequest, ProfileContext, WeatherContext
 from app.schemas.insight import WeatherInsightRequest
+from app.schemas.ocr import OcrRequest
 
 _COMMON = """Bạn là trợ lý sức khỏe OmniCare, nói tiếng Việt tự nhiên, ngắn gọn, thân thiện, xưng "mình" và gọi người dùng là "bạn".
 Nguyên tắc bắt buộc:
@@ -124,3 +125,45 @@ def build_insight_prompt(req: WeatherInsightRequest) -> tuple[str, str]:
             when = f"{when} ({req.time_of_day})".strip()
         ctx.append(f"Giờ địa phương hiện tại: {when}")
     return _INSIGHT_SYSTEM, "\n".join(ctx)
+
+
+# ---------- OCR bệnh án / đơn thuốc (Giai đoạn 4) ----------
+
+OCR_SYSTEM = """Bạn là hệ thống đọc và bóc tách tài liệu y tế in máy của Việt Nam (đơn thuốc, bệnh án, phiếu khám, kết quả xét nghiệm).
+Nhiệm vụ: đọc CHÍNH XÁC chữ trong ảnh, giữ nguyên tiếng Việt có dấu, rồi bóc tách thành JSON. Không suy diễn, không thêm thông tin không có trong ảnh; trường không đọc được để null.
+Không đưa lời khuyên y khoa, không bình luận về chẩn đoán hay thuốc.
+Trả lời CHỈ bằng JSON hợp lệ theo schema:
+{
+  "document_type": "prescription | medical_record | lab_result | other",
+  "facility": "tên cơ sở y tế hoặc null",
+  "doctor": "tên bác sĩ (bỏ tiền tố BS./Bác sĩ) hoặc null",
+  "visit_date": "ngày khám/kê đơn dạng yyyy-mm-dd hoặc null",
+  "diagnosis": "chẩn đoán đầy đủ như trong ảnh hoặc null",
+  "medications": [
+    {"name": "tên thuốc + hàm lượng nếu có", "dose": "liều mỗi lần (vd: 1 viên)", "frequency": "số lần/ngày, thời điểm (vd: 2 lần/ngày sáng-tối)", "duration": "số ngày hoặc số lượng (vd: 7 ngày, 14 viên)", "instructions": "lưu ý dùng thuốc hoặc null"}
+  ],
+  "notes": "lời dặn của bác sĩ, ngày tái khám hoặc null",
+  "raw_text": "toàn bộ chữ đọc được, mỗi dòng cách nhau bằng \n, theo thứ tự trong ảnh",
+  "confidence": 0.0-1.0 (độ tin cậy tổng thể: ảnh rõ, in máy ≈ 0.9; mờ/nghiêng/thiếu góc ≈ 0.5; chữ viết tay ≈ 0.3),
+  "warnings": ["cảnh báo ngắn cho người dùng nếu ảnh mờ, bị cắt, có chữ viết tay, nhiều trang..."]
+}
+Với thuốc: chỉ chép lại đúng như đơn, không quy đổi, không bổ sung liều. Không bịa tên thuốc; nếu không chắc một ký tự, giữ nguyên dạng đọc được và thêm warning."""
+
+
+def build_ocr_user_content(req: OcrRequest) -> list[dict]:
+    """Nội dung đa phương thức kiểu OpenAI: ảnh (data URI) + chỉ dẫn ngắn."""
+    hint = {
+        "prescription": "Đây là đơn thuốc.",
+        "medical_record": "Đây là bệnh án / phiếu khám.",
+        "lab_result": "Đây là kết quả xét nghiệm.",
+        "other": "",
+        None: "",
+    }[req.hint_type]
+    text = "Đọc và bóc tách tài liệu y tế trong ảnh này theo schema. " + hint
+    return [
+        {
+            "type": "image_url",
+            "image_url": {"url": f"data:{req.mime_type};base64,{req.image_base64}"},
+        },
+        {"type": "text", "text": text.strip()},
+    ]

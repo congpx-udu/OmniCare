@@ -5,6 +5,8 @@ export const ENDPOINTS = {
     LIST: '/records',
     UPLOAD: '/records/upload',
     DETAIL: (id: string) => `/records/${id}`,
+    IMAGE: (id: string) => `/records/${id}/image`,
+    REPROCESS: (id: string) => `/records/${id}/reprocess`,
   },
   PROFILE: { GET: '/profile', UPDATE: '/profile' },
   CONTEXT: { WEATHER: '/context/weather', WEATHER_INSIGHT: '/context/weather/insight' },

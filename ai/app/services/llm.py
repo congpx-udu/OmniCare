@@ -65,7 +65,7 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 def chat_json(
     system: str,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     temperature: float = 0.4,
     retries: int = 1,

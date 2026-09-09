@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit'
 import authReducer from './slices/authSlice'
 import chatReducer from './slices/chatSlice'
 import profileReducer from './slices/profileSlice'
+import recordsReducer from './slices/recordsSlice'
 import weatherReducer from './slices/weatherSlice'
 
 export const store = configureStore({
@@ -9,6 +10,7 @@ export const store = configureStore({
     auth: authReducer,
     chat: chatReducer,
     profile: profileReducer,
+    records: recordsReducer,
     weather: weatherReducer,
   },
 })
