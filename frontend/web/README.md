@@ -81,7 +81,7 @@ src/
 │   ├── app.ts            APP_NAME, MEDICAL_DISCLAIMER
 │   ├── nav.ts            APP_NAV (sidebar)
 │   ├── landing.ts        LANDING_IMAGES (ảnh, đang là placeholder), LANDING_MENU, HERO_BARS, FEATURE_CARDS
-│   ├── routes.ts         ROUTES.HOME (landing), DASHBOARD, CHAT, RECORDS, PROFILE, LOGIN, REGISTER
+│   ├── routes.ts         ROUTES.HOME (landing), DASHBOARD, WEATHER, CHAT, RECORDS, PROFILE, LOGIN, REGISTER
 │   ├── storage.ts        STORAGE_KEYS (key localStorage)
 │   └── index.ts
 ├── context/
@@ -177,7 +177,7 @@ Quy tắc chi tiết dành cho AI/agent nằm trong `CLAUDE.md`.
 |---|---|---|---|
 | Landing (công khai) | `LandingLayout` | `/`, `*` | Navbar cố định: logo, nút Menu mở panel trượt (Trang chủ, Tính năng, Dành cho ai, Đăng nhập, Đăng ký); đã đăng nhập thì hiện "Vào ứng dụng" |
 | Auth | `AuthLayout` | `/login`, `/register` | — |
-| Ứng dụng (cần đăng nhập) | `RequireAuth` → `AppLayout` | `/dashboard`, `/chat`, `/records`, `/profile` | Sidebar trái 256px trên `lg`, drawer + topbar có nút menu dưới `lg` |
+| Ứng dụng (cần đăng nhập) | `RequireAuth` → `AppLayout` | `/dashboard`, `/weather`, `/chat`, `/records`, `/profile` | Sidebar trái 256px trên `lg`, drawer + topbar có nút menu dưới `lg` |
 
 Thêm mục sidebar: sửa `APP_NAV` trong `constants/nav.ts` (icon phải có trong `NavIcon`). Thêm mục menu landing: sửa `LANDING_MENU` trong `constants/landing.ts`.
 

@@ -12,6 +12,7 @@ import { ProfilePage } from '@/pages/health-profile/ProfilePage'
 import { LandingPage } from '@/pages/landing/LandingPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RecordsPage } from '@/pages/records/RecordsPage'
+import { WeatherPage } from '@/pages/weather/WeatherPage'
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
         children: [
           { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
           { path: ROUTES.CHAT, element: <ChatPage /> },
+          { path: ROUTES.WEATHER, element: <WeatherPage /> },
           { path: ROUTES.RECORDS, element: <RecordsPage /> },
           { path: ROUTES.PROFILE, element: <ProfilePage /> },
         ],

@@ -1,0 +1,50 @@
+/** Dữ liệu thời tiết từ GET /context/weather (đã chuẩn hóa ở backend, đơn vị metric) */
+export interface WeatherSnapshot {
+  location: { name: string; country: string | null; lat: number; lon: number }
+  current: {
+    temp: number
+    feelsLike: number
+    tempMin: number
+    tempMax: number
+    humidity: number
+    pressure: number
+    windKmh: number
+    visibilityKm: number | null
+    clouds: number | null
+    rainMm: number | null
+    description: string
+    /** Mã icon OpenWeather, ví dụ "10d" */
+    icon: string
+    conditionId: number
+    observedAt: string
+    sunrise: string
+    sunset: string
+  }
+  /** 8 mốc tiếp theo, cách nhau 3 giờ */
+  hourly: Array<{
+    at: string
+    temp: number
+    feelsLike: number
+    description: string
+    icon: string
+    /** Xác suất mưa 0–1 */
+    pop: number
+    rainMm: number | null
+  }>
+  daily: Array<{
+    /** yyyy-mm-dd theo giờ địa phương */
+    date: string
+    tempMin: number
+    tempMax: number
+    description: string
+    icon: string
+    pop: number
+    humidity: number
+  }>
+  timezoneOffset: number
+  fetchedAt: string
+  cached: boolean
+}
+
+/** Cách người dùng chọn vị trí: định vị trình duyệt hoặc nhập tay thành phố */
+export type WeatherLocationQuery = { lat: number; lon: number } | { city: string }

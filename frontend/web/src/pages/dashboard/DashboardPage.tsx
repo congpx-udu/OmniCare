@@ -5,6 +5,8 @@ import { ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchProfile } from '@/redux/slices/profileSlice'
+import { fetchWeather } from '@/redux/slices/weatherSlice'
+import { WeatherSummaryCard } from '@/components/weather'
 
 const SHORTCUTS = [
   {
@@ -32,10 +34,18 @@ export function DashboardPage() {
   const { user } = useAuth()
   const dispatch = useAppDispatch()
   const { profile, status } = useAppSelector((s) => s.profile)
+  const weather = useAppSelector((s) => s.weather)
 
   useEffect(() => {
     if (status === 'idle') void dispatch(fetchProfile())
   }, [dispatch, status])
+
+  // Có vị trí nhớ trong phiên thì tải thời tiết cho thẻ tổng quan
+  useEffect(() => {
+    if (weather.query && !weather.data && weather.status === 'idle') {
+      void dispatch(fetchWeather(weather.query))
+    }
+  }, [dispatch, weather.query, weather.data, weather.status])
 
   const needsProfile = profile !== null && !profile.isComplete
   return (
@@ -56,6 +66,8 @@ export function DashboardPage() {
           để trợ lý AI đưa ra gợi ý sát với thể trạng của bạn.
         </Alert>
       )}
+
+      <WeatherSummaryCard data={weather.data} loading={weather.status === 'loading'} />
 
       <div className="grid gap-4 sm:grid-cols-3">
         {SHORTCUTS.map((s) => (

@@ -90,7 +90,8 @@ src/
 ├── routes/
 │   ├── index.ts              apiRouter: /health, /auth, ...
 │   ├── auth.routes.ts        POST /register, POST /login, GET /me
-│   └── profile.routes.ts     GET /, PUT / (hồ sơ sức khỏe)
+│   ├── profile.routes.ts     GET /, PUT / (hồ sơ sức khỏe)
+│   └── context.routes.ts     GET /weather (thời tiết theo vị trí)
 ├── controllers/
 │   ├── auth.controller.ts    Nhận req, gọi service, trả ok()/created()
 │   └── health.controller.ts  Health check + trạng thái DB
@@ -154,7 +155,7 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | PUT/DELETE 🔒 | `/records/:id` | Sửa tay dữ liệu bóc tách / xóa | ⏳ |
 | GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
 | PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
-| GET 🔒 | `/context/weather?lat=&lng=` | Thời tiết hiện tại tại vị trí | ⏳ |
+| GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |
 
 ### Định dạng response
 
