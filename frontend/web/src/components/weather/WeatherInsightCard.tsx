@@ -27,6 +27,7 @@ export function WeatherInsightCard({
       icon="sparkles"
       title="Ảnh hưởng đến bạn"
       lift={!compact}
+      className={compact ? 'flex h-full flex-col' : undefined}
       actions={
         insight ? (
           <span className="bg-secondary-50 text-secondary-700 rounded-full px-2.5 py-1 text-xs font-semibold">
@@ -52,7 +53,12 @@ export function WeatherInsightCard({
       )}
 
       {insight && (
-        <div className={loading ? 'space-y-4 opacity-60' : 'space-y-4'}>
+        <div
+          className={
+            (loading ? 'space-y-4 opacity-60' : 'space-y-4') +
+            (compact ? ' min-h-0 flex-1 overflow-y-auto pr-1' : '')
+          }
+        >
           <p className="text-primary font-medium">{insight.summary}</p>
 
           {insight.tips.length > 0 && (

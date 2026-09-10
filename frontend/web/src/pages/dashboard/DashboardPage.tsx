@@ -169,17 +169,20 @@ export function DashboardPage() {
         </div>
 
         {/* Cột phải: AI hôm nay */}
-        <div className="space-y-6 xl:col-span-4">
-          {weather.data && (
-            <WeatherInsightCard
-              insight={weather.insight}
-              status={weather.insightStatus}
-              error={weather.insightError}
-              onRetry={retryInsight}
-              compact
-            />
-          )}
-        </div>
+        {/* Ở xl: cột phải cao đúng bằng cột trái, nội dung dư cuộn bên trong thẻ */}
+        {weather.data && (
+          <div className="relative xl:col-span-4">
+            <div className="xl:absolute xl:inset-0">
+              <WeatherInsightCard
+                insight={weather.insight}
+                status={weather.insightStatus}
+                error={weather.insightError}
+                onRetry={retryInsight}
+                compact
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
