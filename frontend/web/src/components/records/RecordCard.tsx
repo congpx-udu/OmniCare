@@ -14,7 +14,7 @@ export function RecordCard({ record }: RecordCardProps) {
   return (
     <Link
       to={ROUTES.RECORD_DETAIL.replace(':id', record.id)}
-      className="rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-4 transition hover:shadow-md"
+      className="card-3d rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
