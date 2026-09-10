@@ -32,17 +32,18 @@ Trước khi báo hoàn thành: `npm run typecheck` và `npm run lint` phải s�
 | Thư mục / file | Chứa gì | Ví dụ hiện có |
 |---|---|---|
 | `src/api/` | Tầng HTTP thô. `axiosClient.ts` (instance + interceptor gắn JWT, xử lý 401), `endpoints.ts` (hằng đường dẫn API). **Không** chứa logic nghiệp vụ. | `axiosClient.ts`, `endpoints.ts` |
-| `src/services/` | Hàm gọi API theo nghiệp vụ, mỗi domain một file `xxxService.ts`. Dùng `axiosClient` + `ENDPOINTS`. Trả về dữ liệu đã có kiểu. | `authService.ts` |
-| `src/redux/` | State toàn cục. `store.ts` cấu hình store, `hooks.ts` (`useAppDispatch`, `useAppSelector` đã typed), `slices/xxxSlice.ts` mỗi domain một slice. | `slices/authSlice.ts` |
+| `src/services/` | Hàm gọi API theo nghiệp vụ, mỗi domain một file `xxxService.ts`. Dùng `axiosClient` + `ENDPOINTS`. Trả về dữ liệu đã có kiểu. | `authService.ts`, `profileService.ts`, `contextService.ts`, `chatService.ts`, `recordService.ts`, `trackingService.ts` |
+| `src/redux/` | State toàn cục. `store.ts` cấu hình store, `hooks.ts` (`useAppDispatch`, `useAppSelector` đã typed), `slices/xxxSlice.ts` mỗi domain một slice. | `slices/authSlice.ts`, `slices/profileSlice.ts`, `slices/weatherSlice.ts`, `slices/chatSlice.ts` (2 luồng food/symptom), `slices/recordsSlice.ts`, `slices/trackingSlice.ts` |
 | `src/context/` | React Context cho state ít thay đổi (theme, cấu hình UI). Tách **định nghĩa context** (`xxxContext.ts`) và **Provider** (`XxxProvider.tsx`) thành 2 file để Fast Refresh hoạt động. | `themeContext.ts`, `ThemeProvider.tsx` |
-| `src/hooks/` | Custom hook dùng chung, file `useXxx.ts`. Hook đọc context cũng đặt ở đây. | `useAuth.ts`, `useTheme.ts`, `useGeolocation.ts` |
-| `src/pages/` | Mỗi route một component trang, nhóm theo domain: `auth/`, `chat/`, `ocr/`, `health-profile/`, `dashboard/`. Tên file `XxxPage.tsx`. Trang chỉ ghép component và gọi hook, không chứa logic phức tạp. | `chat/ChatPage.tsx`, `NotFoundPage.tsx` |
-| `src/layouts/` | Khung bọc ngoài trang, có `<Outlet />`. | `MainLayout.tsx` (header + nav + footer disclaimer), `AuthLayout.tsx` |
-| `src/components/common/` | Component UI thuần, tái sử dụng, không gọi API. | `Button.tsx`, `MedicalDisclaimer.tsx` |
-| `src/components/<domain>/` | Component riêng của một domain (ví dụ `chat/MessageBubble.tsx`, `ocr/UploadDropzone.tsx`). Tạo thư mục khi cần. | chưa có |
-| `src/constants/` | Hằng số: `routes.ts` (đường dẫn route), `storage.ts` (key localStorage), `app.ts` (tên app, disclaimer). Export gom qua `index.ts`. | `routes.ts`, `storage.ts`, `app.ts` |
+| `src/hooks/` | Custom hook dùng chung, file `useXxx.ts`. Hook đọc context cũng đặt ở đây. | `useAuth.ts`, `useTheme.ts`, `useGeolocation.ts`, `useRecordImage.ts` (ảnh sau xác thực → object URL) |
+| `src/pages/` | Mỗi route một component trang, nhóm theo domain: `auth/`, `chat/`, `records/` (hồ sơ bệnh án, upload + OCR), `weather/`, `tracking/` (nhật ký + phân tích AI), `health-profile/`, `dashboard/`. Tên file `XxxPage.tsx`. Trang chỉ ghép component và gọi hook, không chứa logic phức tạp. | `chat/ChatPage.tsx`, `NotFoundPage.tsx` |
+| `src/layouts/` | Khung bọc ngoài trang, có `<Outlet />`. | `LandingLayout.tsx` (menu ngang, công khai), `AuthLayout.tsx`, `AppLayout.tsx` (sidebar trái, sau đăng nhập) |
+| `src/components/common/` | Component UI thuần, tái sử dụng, không gọi API. | `Button.tsx`, `Input.tsx`, `Alert.tsx`, `Logo.tsx`, `MedicalDisclaimer.tsx` |
+| `src/components/<domain>/` | Component riêng của một domain (ví dụ `chat/MessageBubble.tsx`, `records/UploadDropzone.tsx`). Tạo thư mục khi cần. | `auth/RequireAuth.tsx`, `auth/PasswordToggle.tsx`, `health-profile/TagInput.tsx`, `health-profile/ProfileSummary.tsx`, `weather/*` (LocationBar, CurrentWeatherCard, HourlyStrip, DailyForecast, WeatherInsightCard, WeatherSummaryCard), `chat/*` (ModeSwitch, ContextBar, MessageBubble, AssistantContent, ChatInput), `records/*` (UploadDropzone, RecordCard, StatusBadge, MedicationTable — bảng động theo cột AI đọc từ tài liệu), `tracking/*` (LogForm, TrendChart SVG thuần, AdviceCard, LogHistory), `layout/Sidebar.tsx`, `layout/NavIcon.tsx`, `landing/*` (MaskedCard, HeroSection, ...) |
+| `src/constants/` | Hằng số: `routes.ts` (đường dẫn route), `nav.ts` (`APP_NAV` sidebar, `LANDING_NAV` menu ngang), `storage.ts` (key localStorage), `app.ts` (tên app, disclaimer), `chat.ts` (CHAT_MODES, SYMPTOM_CHIPS, RISK_LABELS). Export gom qua `index.ts`. | `routes.ts`, `nav.ts`, `storage.ts`, `app.ts`, `chat.ts` |
 | `src/types/` | Interface/type dùng chung nhiều nơi. Type chỉ dùng trong một service thì để cạnh service đó. | `user.ts`, `api.ts` |
-| `src/utils/` | Hàm thuần không phụ thuộc React. | `cn.ts`, `formatDate.ts` |
+| `src/validators/` | Zod schema cho form, export kèm `z.infer` type. | `auth.ts`, `profile.ts` |
+| `src/utils/` | Hàm thuần không phụ thuộc React. | `cn.ts`, `formatDate.ts`, `apiError.ts` |
 | `src/assets/` | Ảnh, icon, font. Import trực tiếp trong component. | `hero.png` |
 | `src/routes.tsx` | Khai báo toàn bộ route bằng `createBrowserRouter`, dùng hằng từ `constants/routes.ts`. | |
 | `src/App.tsx` | Ghép provider: Redux `Provider` → `ThemeProvider` → `RouterProvider`. | |
@@ -68,19 +69,21 @@ Page → hook / dispatch thunk → service → axiosClient → backend
 - Import bằng alias `@/`, không dùng `../../..`.
 - **Không** gọi `axios`/`fetch` trực tiếp trong component hoặc page. Luôn đi qua `services/`.
 - Không gọi `setState` đồng bộ trong `useEffect`. Lấy dữ liệu theo sự kiện người dùng hoặc qua thunk.
+- Đăng nhập bằng **số điện thoại + mật khẩu** (không phải email). Đăng ký xong chuyển về `/login`, không tự đăng nhập. Sau đăng nhập vào `/dashboard`.
+- Bố cục: landing `/` công khai dùng `LandingLayout` (navbar cố định + panel Menu, 3 section full-height kiểu "masked cards", ảnh trong `constants/landing.ts`); trang ứng dụng dùng `AppLayout` (sidebar trái) và bọc bởi `RequireAuth`. Trang mới của ứng dụng: thêm route dưới `AppLayout` trong `routes.tsx` và mục trong `APP_NAV`. Không tạo header ngang riêng trong trang ứng dụng.
 - State: server data và auth → Redux slice. Theme/cấu hình UI → Context. State cục bộ → `useState`.
 - Validate form và response quan trọng bằng Zod, suy kiểu bằng `z.infer`.
-- Styling chỉ bằng Tailwind class. Không CSS module, không styled-components. Màu thương hiệu dùng token `primary`, `primary-dark`, `primary-light`, `danger`, `warning`, `success`.
+- Styling chỉ bằng Tailwind class. Không CSS module, không styled-components. Màu thương hiệu theo design system "Clinical Clarity" (bảng trong `README.md`): `primary` (navy), `secondary` (teal), `tertiary` (sky), `neutral` (slate), mỗi màu có thang 50–900; nền `background`/`surface`/`surface-muted`; trạng thái `danger`/`warning`/`success`/`info`; font `font-heading` (Manrope) cho tiêu đề/nút, `font-sans` (Plus Jakarta Sans) cho body. Không tự thêm mã hex mới trong component.
 - Không cài thư viện mới khi chưa hỏi. Không thêm UI kit (MUI, AntD).
 - Text giao diện tiếng Việt có dấu. Tên biến/hàm/comment code tiếng Anh.
 
 ## 6. Quy tắc riêng cho sản phẩm y tế
 
-- Mọi màn hình chat/gợi ý sức khỏe **bắt buộc** hiển thị `<MedicalDisclaimer />` (yêu cầu AI-04). Không xóa, không ẩn. Footer `MainLayout` cũng đã có disclaimer.
+- Mọi màn hình chat/gợi ý sức khỏe **bắt buộc** hiển thị `<MedicalDisclaimer />` (yêu cầu AI-04). Không xóa, không ẩn. Trang `/chat` có 2 luồng trong một khung (`?mode=food|symptom`), lịch sử tách riêng; `riskLevel: emergency` phải hiện banner đỏ kèm số 115. Footer `AppLayout` và `LandingLayout` cũng đã có disclaimer.
 - Không hardcode lời khuyên y khoa, liều thuốc, chẩn đoán trong frontend. Nội dung y tế đến từ backend/AI.
 - Dữ liệu sức khỏe là PII nhạy cảm: không `console.log`, không lưu localStorage (chỉ lưu token đăng nhập qua `STORAGE_KEYS.TOKEN`), không gửi bên thứ ba.
-- Ảnh đơn thuốc/bệnh án upload qua `multipart/form-data`, không giữ base64 trong state lâu dài.
-- Vị trí: dùng `useGeolocation().request()` khi người dùng bấm, luôn có fallback nhập tay thành phố.
+- Ảnh đơn thuốc/bệnh án upload qua `multipart/form-data` (`recordService.upload`, nhiều file = nhiều trang của một bộ hồ sơ, AI gộp thành một kết quả), không giữ base64 trong state lâu dài. Ảnh gốc nằm sau xác thực (`/records/:id/image/:page`), hiển thị qua `useRecordImage` (Blob → object URL, thu hồi khi unmount), không dùng `<img src>` thẳng.
+- Vị trí: dùng `useGeolocation().request(onSuccess)` khi người dùng bấm, luôn có fallback nhập tay thành phố. Vị trí đã chọn chỉ nhớ trong `sessionStorage` (`STORAGE_KEYS.WEATHER_QUERY`), không lưu localStorage.
 
 ## 7. Những điều KHÔNG làm
 

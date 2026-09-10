@@ -1,0 +1,131 @@
+import request from 'supertest'
+import { describe, expect, it } from 'vitest'
+import { auth, registerAndLogin } from './helpers.js'
+
+// PNG 1x1 hợp lệ để multer nhận mime image/png
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+describe('chat', () => {
+  it('gửi tin, lưu cặp user/assistant theo luồng, có disclaimer, lịch sử tách riêng', async () => {
+    const { app, token } = await registerAndLogin()
+    const res = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'symptom', message: 'Tôi đau đầu', feeling: 'mệt' })
+      .expect(201)
+    expect(res.body.data.disclaimer).toBe('Test disclaimer')
+    expect(res.body.data.userMessage.role).toBe('user')
+    expect(res.body.data.assistantMessage.meta.riskLevel).toBe('home')
+    expect(res.body.data.assistantMessage.meta.suggestedSpecialty).toBe('Nội tổng quát')
+
+    await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'food', message: 'Tối nay ăn gì?', pantry: ['trứng gà', 'cà chua'] })
+      .expect(201)
+
+    // Tủ bếp: quá 30 nguyên liệu hoặc mục rỗng bị từ chối
+    await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'food', message: 'ăn gì', pantry: Array.from({ length: 31 }, () => 'gạo') })
+      .expect(400)
+    await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'food', message: 'ăn gì', pantry: ['  '] })
+      .expect(400)
+
+    const symptom = await request(app)
+      .get('/api/chat/history?mode=symptom')
+      .set(auth(token))
+      .expect(200)
+    expect(symptom.body.data).toHaveLength(2)
+    const food = await request(app).get('/api/chat/history?mode=food').set(auth(token)).expect(200)
+    expect(food.body.data).toHaveLength(2)
+    expect(food.body.data[1].meta.meals[0].name).toBe('Cháo gà')
+
+    await request(app).delete('/api/chat/history?mode=food').set(auth(token)).expect(200)
+    const after = await request(app).get('/api/chat/history?mode=food').set(auth(token)).expect(200)
+    expect(after.body.data).toHaveLength(0)
+  })
+
+  it('luồng health: một lịch sử, AI trả intent theo từng lượt, có cả khối triệu chứng lẫn món ăn', async () => {
+    const { app, token } = await registerAndLogin()
+    const sym = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'health', message: 'Tôi đau bụng' })
+      .expect(201)
+    expect(sym.body.data.assistantMessage.meta.intent).toBe('symptom')
+    expect(sym.body.data.assistantMessage.meta.riskLevel).toBe('home')
+
+    const food = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'health', message: 'Vậy tối nay ăn gì?', pantry: ['gạo'] })
+      .expect(201)
+    expect(food.body.data.assistantMessage.meta.intent).toBe('food')
+    expect(food.body.data.assistantMessage.meta.meals[0].name).toBe('Cháo gà')
+
+    const history = await request(app)
+      .get('/api/chat/history?mode=health')
+      .set(auth(token))
+      .expect(200)
+    expect(history.body.data).toHaveLength(4)
+  })
+
+  it('gửi kèm ảnh (multipart): lưu attachments, lấy lại được ảnh, user khác bị chặn, xóa lịch sử xóa ảnh', async () => {
+    const { app, token } = await registerAndLogin()
+    const other = await registerAndLogin('B')
+    const res = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .field('mode', 'health')
+      .field('message', 'Món này ăn được không?')
+      .field('pantry', JSON.stringify(['gạo']))
+      .attach('images', PNG, { filename: 'a.png', contentType: 'image/png' })
+      .attach('images', PNG, { filename: 'b.png', contentType: 'image/png' })
+      .expect(201)
+    const msg = res.body.data.userMessage
+    expect(msg.attachments).toEqual([
+      { index: 0, mime: 'image/png' },
+      { index: 1, mime: 'image/png' },
+    ])
+    const img = await request(app).get(`/api/chat/${msg.id}/image/1`).set(auth(token)).expect(200)
+    expect(img.headers['content-type']).toContain('image/png')
+    await request(app).get(`/api/chat/${msg.id}/image/0`).set(auth(other.token)).expect(404)
+    await request(app).get(`/api/chat/${msg.id}/image/2`).set(auth(token)).expect(404)
+
+    await request(app).delete('/api/chat/history?mode=health').set(auth(token)).expect(200)
+    await request(app).get(`/api/chat/${msg.id}/image/0`).set(auth(token)).expect(404)
+  })
+
+  it('validate mode và message; user khác không thấy lịch sử', async () => {
+    const a = await registerAndLogin('A')
+    const b = await registerAndLogin('B')
+    await request(a.app)
+      .post('/api/chat')
+      .set(auth(a.token))
+      .send({ mode: 'x', message: 'hi' })
+      .expect(400)
+    await request(a.app)
+      .post('/api/chat')
+      .set(auth(a.token))
+      .send({ mode: 'food', message: '' })
+      .expect(400)
+    await request(a.app)
+      .post('/api/chat')
+      .set(auth(a.token))
+      .send({ mode: 'food', message: 'ăn gì' })
+      .expect(201)
+    const other = await request(b.app)
+      .get('/api/chat/history?mode=food')
+      .set(auth(b.token))
+      .expect(200)
+    expect(other.body.data).toHaveLength(0)
+  })
+})

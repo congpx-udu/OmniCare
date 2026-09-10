@@ -1,1 +1,28 @@
-docs
+# Dependencies & build
+node_modules/
+dist/
+build/
+__pycache__/
+.venv/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Dữ liệu người dùng
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Tài liệu nội bộ (BRD, ảnh thiết kế, plan)
+docs/
+
+# Skill cài cục bộ cho Claude Code (cá nhân, không commit)
+.claude/skills/

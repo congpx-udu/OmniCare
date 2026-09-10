@@ -8,12 +8,13 @@
 - Yêu cầu nghiệp vụ nằm trong BRD (Google Docs). Ngoài phạm vi MVP: chẩn đoán chính thức, kê đơn, đặt lịch/thanh toán, OCR chữ tay, tích hợp smartwatch.
 - Frontend web tại `../frontend/web` (Vite, port 5173). Dịch vụ AI/OCR tại `../ai` (gọi qua `AI_SERVICE_URL`).
 - Mọi response có dạng `{ success, data, message }` hoặc `{ success: false, message, details }`.
+- Xác thực bằng **số điện thoại + mật khẩu**. `phone` là định danh duy nhất (chuẩn hóa `+84` → `0` trong `validators/auth.validator.ts`), `email` tùy chọn và `sparse unique`. `/auth/register` không trả token.
 
 ## 2. Stack
 
 - Node 22, TypeScript strict, ESM (`"type": "module"`, import nội bộ **phải có đuôi `.js`**).
-- Express 5 (async handler tự bắt lỗi), Mongoose 9, Zod 4, jsonwebtoken, bcryptjs, multer, helmet, cors, pino.
-- Dev: `tsx watch`. Build: `tsc` ra `dist/`.
+- Express 5 (async handler tự bắt lỗi), Mongoose 9, Zod 4, jsonwebtoken, bcryptjs, multer, helmet, cors, express-rate-limit, pino.
+- Dev: `tsx watch`. Build: `tsc` ra `dist/`. Test: `vitest` + `supertest` trong `tests/` (tích hợp qua HTTP, DB test `MONGO_URI_TEST`, AI giả lập trong `tests/setup.ts`).
 - Format: Prettier (không dấu chấm phẩy, nháy đơn). Chưa có linter.
 
 ## 3. Lệnh
@@ -23,10 +24,11 @@ npm run dev        # tsx watch src/server.ts, http://localhost:3000/api
 npm run build      # tsc -> dist/
 npm start          # node dist/server.js
 npm run typecheck  # tsc --noEmit
+npm run test       # vitest run (cần Mongo: MONGO_URI_TEST=mongodb://localhost:27017/omnicare_test)
 npm run format
 ```
 
-Trước khi báo hoàn thành: `npm run typecheck` phải sạch. Cần MongoDB chạy tại `MONGO_URI` để `npm run dev` khởi động được.
+Trước khi báo hoàn thành: `npm run typecheck` và `npm test` phải sạch. Cần MongoDB chạy tại `MONGO_URI` để `npm run dev` khởi động được.
 
 ## 4. Vị trí code — đặt gì ở đâu
 
@@ -40,10 +42,11 @@ Trước khi báo hoàn thành: `npm run typecheck` phải sạch. Cần MongoDB
 | `src/services/` | Logic nghiệp vụ, truy vấn model, ném `ApiError`. Mỗi domain một file `xxx.service.ts`. Đây là nơi gọi dịch vụ ngoài (AI, OpenWeather). | `auth.service.ts` |
 | `src/models/` | Mongoose schema + model, tên file PascalCase. | `User.ts`, `HealthProfile.ts`, `ChatMessage.ts`, `MedicalRecord.ts` |
 | `src/validators/` | Zod schema cho `{ body, params, query }` của từng route, export kèm `z.infer` type. | `auth.validator.ts` |
-| `src/middlewares/` | `auth.ts` (`requireAuth` gắn `req.userId`), `validate.ts` (Zod), `upload.ts` (multer ảnh ≤10MB), `errorHandler.ts` (`notFound`, `errorHandler`). | |
+| `src/middlewares/` | `auth.ts` (`requireAuth` gắn `req.userId`), `validate.ts` (Zod), `upload.ts` (multer ảnh ≤10MB), `rateLimit.ts` (`loginLimiter`, `registerLimiter`), `errorHandler.ts` (`notFound`, `errorHandler`). | |
 | `src/utils/` | `ApiError` (static `badRequest/unauthorized/notFound/conflict`), `asyncHandler`, `response.ts` (`ok`, `created`), `jwt.ts`. | |
 | `src/types/` | Khai báo type toàn cục, mở rộng `Express.Request` (`userId`). | `express.d.ts` |
 | `uploads/` | Ảnh đơn thuốc người dùng tải lên (gitignore). | |
+| `tests/` | `setup.ts` (env test, Mongo test, mock AI), `helpers.ts` (`registerAndLogin`, `auth`), `*.test.ts` mỗi domain. Thêm endpoint mới thì thêm test tích hợp tương ứng, gồm cả trường hợp user khác không truy cập được. |
 
 ### Luồng xử lý một request
 
@@ -93,6 +96,6 @@ routes → validate(zodSchema) → requireAuth → controller → service → mo
 
 ## 8. Khi hoàn thành một task
 
-1. Chạy `npm run typecheck`.
+1. Chạy `npm run typecheck` và `npm test`.
 2. Nếu thêm endpoint: cập nhật bảng trong `README.md`.
 3. Tóm tắt ngắn: file đã thay đổi, quyết định đáng chú ý, việc còn dang dở.

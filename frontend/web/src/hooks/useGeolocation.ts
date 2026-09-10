@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-interface Coords {
+export interface Coords {
   lat: number
   lng: number
 }
@@ -14,7 +14,8 @@ export function useGeolocation() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const request = useCallback(() => {
+  /** @param onSuccess gọi ngay khi có tọa độ, tiện để phát request thời tiết theo sự kiện bấm */
+  const request = useCallback((onSuccess?: (coords: Coords) => void) => {
     if (!navigator.geolocation) {
       setError('Trình duyệt không hỗ trợ định vị')
       return
@@ -22,9 +23,11 @@ export function useGeolocation() {
     setLoading(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        const next = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        setCoords(next)
         setError(null)
         setLoading(false)
+        onSuccess?.(next)
       },
       (err) => {
         setError(err.message)
