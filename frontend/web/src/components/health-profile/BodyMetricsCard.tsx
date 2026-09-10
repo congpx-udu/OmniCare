@@ -24,6 +24,7 @@ export function BodyMetricsCard({ profile }: BodyMetricsCardProps) {
         profile?.weightKg !== null && profile?.weightKg !== undefined
           ? `${profile.weightKg} kg`
           : '—',
+      sub: profile?.weightDate ? `nhật ký ${profile.weightDate.slice(5)}` : undefined,
     },
     {
       k: 'Tuổi',

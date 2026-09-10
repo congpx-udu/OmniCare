@@ -18,7 +18,7 @@ export function StatCard({ label, icon, value, unit, sub, tone, to }: StatCardPr
   return (
     <Link
       to={to}
-      className="rounded-card bg-surface-cream hover:border-primary-200 block border border-neutral-200/80 p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+      className="card-3d rounded-card bg-surface-cream hover:border-primary-200 block border border-neutral-200/80 p-5"
     >
       <div className="flex items-center justify-between">
         <span className="font-mono text-[11px] font-medium tracking-[0.18em] text-neutral-500 uppercase">

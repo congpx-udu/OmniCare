@@ -13,7 +13,7 @@ export function ShortcutCard({ to, icon, title, desc }: ShortcutCardProps) {
   return (
     <Link
       to={to}
-      className="group rounded-card bg-surface-cream hover:border-primary-200 flex gap-4 border border-neutral-200/80 p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group card-3d rounded-card bg-surface-cream hover:border-primary-200 flex gap-4 border border-neutral-200/80 p-5"
     >
       <span className="bg-secondary-50 text-secondary flex size-11 shrink-0 items-center justify-center rounded-xl">
         <NavIcon name={icon} className="size-5" />

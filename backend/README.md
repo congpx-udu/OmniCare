@@ -160,8 +160,8 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | POST 🔒 | `/records/:id/reprocess` | OCR lại ảnh đã lưu | ✅ |
 | GET 🔒 | `/records?year=&q=&limit=`, `/records/:id` | Danh sách theo ngày khám giảm dần (`q` tìm chẩn đoán, cơ sở, tên thuốc, ghi chú), chi tiết | ✅ |
 | PUT/DELETE 🔒 | `/records/:id` | Sửa tay `{ facility?, doctor?, visitDate?, diagnosis?, medicationTable?: {columns[{key,label}], rows[]} (bảng đúng cột tài liệu, backend suy ra `medications` chuẩn hóa từ bảng), notes?, confirm? }` (loại tài liệu do AI nhận dạng) (`confirm: true` → `done`) / xóa hồ sơ và ảnh | ✅ |
-| GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
-| PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
+| GET 🔒 | `/profile` | Hồ sơ cá nhân của user hiện tại (trả hồ sơ rỗng nếu chưa có): `fullName`, `email`, `phone` từ tài khoản + chiều cao, ngày sinh, giới tính, bệnh nền, dị ứng. Kèm `weightKg`/`weightDate` (cân nặng mới nhất trong nhật ký theo dõi), `bmi`, `age`, `isComplete` (đủ chiều cao + ngày sinh) | ✅ |
+| PUT 🔒 | `/profile` | Upsert `{ fullName?, email? (null = bỏ), heightCm?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên. Cân nặng không nhập ở đây (ghi ở `/tracking/logs/:date`). Email trùng → 409 | ✅ |
 | GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |
 | GET 🔒 | `/tracking/logs?from=&to=&limit=` | Nhật ký sức khỏe (cũ → mới) | ✅ |
 | PUT 🔒 | `/tracking/logs/:date` | Upsert nhật ký một ngày `{ weightKg?, systolic?, diastolic?, heartRate?, glucose?, sleepHours?, activityMinutes?, activityType?, mood?(1-5), note? }`, null = xóa chỉ số | ✅ |

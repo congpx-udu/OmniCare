@@ -26,7 +26,7 @@ export function ChartCard({
   return (
     <Link
       to={ROUTES.TRACKING}
-      className="rounded-card bg-surface-cream hover:border-primary-200 block border border-neutral-200/80 p-5 transition hover:shadow-md"
+      className="card-3d rounded-card bg-surface-cream hover:border-primary-200 block border border-neutral-200/80 p-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">

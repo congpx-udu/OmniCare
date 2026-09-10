@@ -79,7 +79,7 @@ export function TrackingPage() {
         <div>
           <h2 className="text-lg text-white">Nhờ AI phân tích</h2>
           <p className="text-sm text-white/80">
-            Dựa trên {logs.length} ngày nhật ký, hồ sơ sức khỏe
+            Dựa trên {logs.length} ngày nhật ký, hồ sơ cá nhân
             {weather.data ? ` và thời tiết ${weather.data.location.name}` : ''}. Mất khoảng 5–10
             giây.
           </p>

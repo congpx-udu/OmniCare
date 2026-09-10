@@ -23,7 +23,7 @@ export function CurrentWeatherCard({ data }: CurrentWeatherCardProps) {
     { label: 'Mặt trời lặn', value: formatTime(current.sunset, timezoneOffset) },
   ]
   return (
-    <section className="rounded-card from-primary to-primary-700 overflow-hidden bg-linear-to-br text-white shadow-lg">
+    <section className="card-3d rounded-card from-primary to-primary-700 overflow-hidden bg-linear-to-br text-white">
       <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-white/70">

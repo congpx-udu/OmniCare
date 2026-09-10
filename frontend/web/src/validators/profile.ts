@@ -17,8 +17,17 @@ const optionalNumber = (min: number, max: number, unit: string) =>
 const today = () => new Date().toISOString().slice(0, 10)
 
 export const profileFormSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, 'Họ tên tối thiểu 2 ký tự')
+    .max(100, 'Họ tên tối đa 100 ký tự'),
+  email: z
+    .string()
+    .trim()
+    .transform((v) => (v === '' ? null : v))
+    .pipe(z.email('Email không hợp lệ').nullable()),
   heightCm: optionalNumber(30, 250, 'cm'),
-  weightKg: optionalNumber(2, 500, 'kg'),
   dateOfBirth: z
     .string()
     .trim()

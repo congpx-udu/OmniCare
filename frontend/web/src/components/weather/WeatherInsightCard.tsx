@@ -13,12 +13,12 @@ interface WeatherInsightCardProps {
 /** Khối "Ảnh hưởng đến bạn": AI đọc thời tiết + hồ sơ + buổi trong ngày → lưu ý, gợi ý bữa ăn và vận động */
 export function WeatherInsightCard({ insight, status, error, onRetry }: WeatherInsightCardProps) {
   return (
-    <section className="rounded-card bg-surface border border-neutral-200 p-5">
+    <section className="card-3d rounded-card bg-surface border border-neutral-200 p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-lg">Ảnh hưởng đến bạn</h2>
           <p className="text-xs text-neutral-500">
-            Dựa trên thời tiết hiện tại, hồ sơ sức khỏe và thời điểm trong ngày
+            Dựa trên thời tiết hiện tại, hồ sơ cá nhân và thời điểm trong ngày
             {insight ? ` (${insight.timeOfDay})` : ''}.
           </p>
         </div>

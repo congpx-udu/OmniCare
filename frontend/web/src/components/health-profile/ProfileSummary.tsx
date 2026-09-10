@@ -17,7 +17,11 @@ export function ProfileSummary({ profile }: ProfileSummaryProps) {
     {
       title: 'BMI',
       value: profile.bmi !== null ? profile.bmi.toFixed(1) : '—',
-      sub: label ? label.label : 'Cần chiều cao và cân nặng',
+      sub: label
+        ? `${label.label}${profile.weightDate ? ` · ${profile.weightKg} kg` : ''}`
+        : profile.heightCm === null
+          ? 'Cần chiều cao'
+          : 'Cần cân nặng từ nhật ký',
       tone: label?.tone,
     },
     {

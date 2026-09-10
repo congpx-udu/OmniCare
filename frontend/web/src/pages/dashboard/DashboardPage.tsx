@@ -111,7 +111,7 @@ export function DashboardPage() {
 
       {needsProfile && (
         <Alert variant="warning">
-          Hồ sơ sức khỏe của bạn chưa đủ chiều cao, cân nặng và ngày sinh.{' '}
+          Hồ sơ cá nhân của bạn chưa có chiều cao và ngày sinh.{' '}
           <Link to={ROUTES.PROFILE} className="font-semibold underline">
             Hoàn thiện ngay
           </Link>{' '}
@@ -148,7 +148,7 @@ export function DashboardPage() {
           label="BMI"
           icon="scale"
           value={bmi !== null ? bmi.toFixed(1) : '—'}
-          sub={bmiLabel?.label ?? 'Cần số đo'}
+          sub={bmiLabel?.label ?? (profile?.heightCm ? 'Ghi cân nặng' : 'Cần chiều cao')}
           tone={bmiLabel?.tone}
           to={ROUTES.PROFILE}
         />
@@ -172,7 +172,7 @@ export function DashboardPage() {
       ) : (
         <Link
           to={ROUTES.WEATHER}
-          className="rounded-card bg-surface-cream hover:border-primary-200 flex items-center justify-between border border-neutral-200/80 p-5 transition hover:shadow-md"
+          className="card-3d rounded-card bg-surface-cream hover:border-primary-200 flex items-center justify-between border border-neutral-200/80 p-5"
         >
           <div>
             <h3 className="text-lg">Thời tiết & ảnh hưởng đến bạn</h3>
@@ -204,7 +204,7 @@ export function DashboardPage() {
       {latestAdvice && (
         <Link
           to={ROUTES.TRACKING}
-          className="rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-5 transition hover:shadow-md"
+          className="card-3d rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-5"
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg">Nhật ký sức khỏe</h3>

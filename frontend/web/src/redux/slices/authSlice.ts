@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { STORAGE_KEYS } from '@/constants'
 import { authService, type LoginPayload, type RegisterPayload } from '@/services/authService'
 import type { User } from '@/types'
@@ -80,6 +80,10 @@ const authSlice = createSlice({
     clearAuthError(state) {
       state.error = null
     },
+    /** Cập nhật họ tên/email sau khi lưu hồ sơ cá nhân */
+    updateUser(state, action: PayloadAction<Partial<Pick<User, 'fullName' | 'email'>>>) {
+      if (state.user) state.user = { ...state.user, ...action.payload }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -125,5 +129,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { logout, clearAuthError } = authSlice.actions
+export const { logout, clearAuthError, updateUser } = authSlice.actions
 export default authSlice.reducer

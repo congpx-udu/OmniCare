@@ -8,5 +8,5 @@ export async function getProfile(req: Request, res: Response) {
 
 export async function updateProfile(req: Request, res: Response) {
   const profile = await profileService.updateProfile(req.userId!, req.body)
-  ok(res, profile, 'Đã lưu hồ sơ sức khỏe')
+  ok(res, profile, 'Đã lưu hồ sơ cá nhân')
 }
