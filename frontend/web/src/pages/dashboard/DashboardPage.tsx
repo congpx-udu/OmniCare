@@ -168,7 +168,7 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Cột phải: AI hôm nay, nhật ký, bệnh án */}
+        {/* Cột phải: AI hôm nay */}
         <div className="space-y-6 xl:col-span-4">
           {weather.data && (
             <WeatherInsightCard
@@ -179,85 +179,87 @@ export function DashboardPage() {
               compact
             />
           )}
-
-          <SectionCard
-            icon="activity"
-            title="Nhật ký sức khỏe"
-            actions={
-              <IconButton
-                icon="arrow-right"
-                label="Mở theo dõi sức khỏe"
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(ROUTES.TRACKING)}
-              />
-            }
-          >
-            {latestAdvice ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-100">
-                    <div
-                      className="bg-secondary h-full rounded-full transition-[width]"
-                      style={{
-                        width: `${latestAdvice.suggestions.length ? (doneCount / latestAdvice.suggestions.length) * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-secondary-700 text-xs font-semibold whitespace-nowrap">
-                    {doneCount}/{latestAdvice.suggestions.length} đề xuất
-                  </span>
-                </div>
-                <p className="line-clamp-3 text-sm text-neutral-700">{latestAdvice.summary}</p>
-                {nextSuggestion && (
-                  <p className="bg-secondary-50 text-secondary-700 flex items-start gap-2 rounded-xl px-3 py-2 text-sm">
-                    <NavIcon name="sparkles" className="mt-0.5 size-4 shrink-0" />
-                    <span className="font-semibold">{nextSuggestion.title}</span>
-                  </p>
-                )}
-              </div>
-            ) : (
-              <EmptyState
-                icon="activity"
-                title="Chưa có phân tích"
-                hint="Ghi nhật ký vài ngày rồi nhờ AI phân tích."
-                className="py-6"
-              />
-            )}
-          </SectionCard>
-
-          <SectionCard
-            icon="clipboard"
-            title="Bệnh án gần nhất"
-            actions={
-              <IconButton
-                icon="arrow-right"
-                label="Xem tất cả bệnh án"
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(ROUTES.RECORDS)}
-              />
-            }
-          >
-            {latestRecord ? (
-              <RecordCard record={latestRecord} />
-            ) : (
-              <EmptyState
-                icon="upload"
-                title={records.listStatus === 'loading' ? 'Đang tải...' : 'Chưa có bệnh án'}
-                className="py-6"
-                action={
-                  <IconButton
-                    icon="upload"
-                    label="Tải bệnh án"
-                    variant="primary"
-                    onClick={() => navigate(ROUTES.RECORDS)}
-                  />
-                }
-              />
-            )}
-          </SectionCard>
         </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SectionCard
+          icon="activity"
+          title="Nhật ký sức khỏe"
+          actions={
+            <IconButton
+              icon="arrow-right"
+              label="Mở theo dõi sức khỏe"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(ROUTES.TRACKING)}
+            />
+          }
+        >
+          {latestAdvice ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                  <div
+                    className="bg-secondary h-full rounded-full transition-[width]"
+                    style={{
+                      width: `${latestAdvice.suggestions.length ? (doneCount / latestAdvice.suggestions.length) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-secondary-700 text-xs font-semibold whitespace-nowrap">
+                  {doneCount}/{latestAdvice.suggestions.length} đề xuất
+                </span>
+              </div>
+              <p className="line-clamp-3 text-sm text-neutral-700">{latestAdvice.summary}</p>
+              {nextSuggestion && (
+                <p className="bg-secondary-50 text-secondary-700 flex items-start gap-2 rounded-xl px-3 py-2 text-sm">
+                  <NavIcon name="sparkles" className="mt-0.5 size-4 shrink-0" />
+                  <span className="font-semibold">{nextSuggestion.title}</span>
+                </p>
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              icon="activity"
+              title="Chưa có phân tích"
+              hint="Ghi nhật ký vài ngày rồi nhờ AI phân tích."
+              className="py-6"
+            />
+          )}
+        </SectionCard>
+
+        <SectionCard
+          icon="clipboard"
+          title="Bệnh án gần nhất"
+          actions={
+            <IconButton
+              icon="arrow-right"
+              label="Xem tất cả bệnh án"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(ROUTES.RECORDS)}
+            />
+          }
+        >
+          {latestRecord ? (
+            <RecordCard record={latestRecord} />
+          ) : (
+            <EmptyState
+              icon="upload"
+              title={records.listStatus === 'loading' ? 'Đang tải...' : 'Chưa có bệnh án'}
+              className="py-6"
+              action={
+                <IconButton
+                  icon="upload"
+                  label="Tải bệnh án"
+                  variant="primary"
+                  onClick={() => navigate(ROUTES.RECORDS)}
+                />
+              }
+            />
+          )}
+        </SectionCard>
       </div>
 
       <MedicalDisclaimer />
