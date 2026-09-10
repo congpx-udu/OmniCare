@@ -24,7 +24,7 @@ export function StatCard({ label, icon, value, unit, sub, tone, to }: StatCardPr
         <NavIcon name={icon} className="size-6" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+        <span className="block text-xs font-semibold tracking-wide text-neutral-500 uppercase">
           {label}
         </span>
         <span className="flex flex-wrap items-baseline gap-x-1.5">
@@ -38,7 +38,7 @@ export function StatCard({ label, icon, value, unit, sub, tone, to }: StatCardPr
           </span>
           {unit && <span className="text-sm text-neutral-500">{unit}</span>}
         </span>
-        {sub && <span className="block truncate text-xs text-neutral-500">{sub}</span>}
+        {sub && <span className="block text-xs text-neutral-500">{sub}</span>}
       </span>
     </Link>
   )

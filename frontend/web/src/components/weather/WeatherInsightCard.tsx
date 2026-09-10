@@ -9,32 +9,30 @@ interface WeatherInsightCardProps {
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
   onRetry: () => void
+  /** Bố cục gọn (cột phải Dashboard): tips xếp dọc, không nhấc 3D */
+  compact?: boolean
 }
 
 /** Khối "Ảnh hưởng đến bạn": AI đọc thời tiết + hồ sơ + buổi trong ngày → lưu ý, bữa ăn, vận động */
-export function WeatherInsightCard({ insight, status, error, onRetry }: WeatherInsightCardProps) {
+export function WeatherInsightCard({
+  insight,
+  status,
+  error,
+  onRetry,
+  compact = false,
+}: WeatherInsightCardProps) {
   const loading = status === 'loading'
   return (
     <SectionCard
       icon="sparkles"
       title="Ảnh hưởng đến bạn"
-      lift
+      lift={!compact}
       actions={
-        <>
-          {insight && (
-            <span className="bg-secondary-50 text-secondary-700 rounded-full px-2.5 py-1 text-xs font-semibold">
-              {insight.timeOfDay}
-            </span>
-          )}
-          <IconButton
-            icon="refresh"
-            label="Phân tích lại"
-            variant="ghost"
-            size="sm"
-            loading={loading}
-            onClick={onRetry}
-          />
-        </>
+        insight ? (
+          <span className="bg-secondary-50 text-secondary-700 rounded-full px-2.5 py-1 text-xs font-semibold">
+            {insight.timeOfDay}
+          </span>
+        ) : undefined
       }
     >
       {loading && !insight && (
@@ -46,10 +44,11 @@ export function WeatherInsightCard({ insight, status, error, onRetry }: WeatherI
       )}
 
       {status === 'failed' && !insight && (
-        <p className="text-danger flex items-center gap-2 text-sm">
+        <div className="text-danger flex flex-wrap items-center gap-2 text-sm">
           <NavIcon name="alert" className="size-4 shrink-0" />
-          {error ?? 'Không lấy được lưu ý từ trợ lý AI.'}
-        </p>
+          <span className="flex-1">{error ?? 'Không lấy được lưu ý từ trợ lý AI.'}</span>
+          <IconButton icon="sparkles" label="Thử lại" variant="soft" size="sm" onClick={onRetry} />
+        </div>
       )}
 
       {insight && (
@@ -57,7 +56,7 @@ export function WeatherInsightCard({ insight, status, error, onRetry }: WeatherI
           <p className="text-primary font-medium">{insight.summary}</p>
 
           {insight.tips.length > 0 && (
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <ul className={compact ? 'grid gap-2' : 'grid gap-2 sm:grid-cols-2'}>
               {insight.tips.map((t) => (
                 <li
                   key={t.title}
@@ -76,7 +75,7 @@ export function WeatherInsightCard({ insight, status, error, onRetry }: WeatherI
           )}
 
           {(insight.mealIdea || insight.activityIdea) && (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className={compact ? 'grid gap-2' : 'grid gap-2 sm:grid-cols-2'}>
               {insight.mealIdea && (
                 <Link
                   to={`${ROUTES.CHAT}?mode=food`}

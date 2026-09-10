@@ -161,29 +161,38 @@ export function RecordDetailPage() {
 
   return (
     <section className="space-y-5">
-      <PageHeader
-        icon="clipboard"
-        title={record.diagnosis ?? 'Chi tiết bệnh án'}
-        subtitle={subtitle}
-        actions={
-          <>
-            <IconButton icon="chevron-left" label="Quay lại" variant="ghost" onClick={back} />
-            <IconButton
-              icon="refresh"
-              label="Đọc lại bằng AI"
-              onClick={reprocess}
-              disabled={saving}
-            />
-            <IconButton
-              icon="trash"
-              label="Xóa hồ sơ"
-              variant="danger"
-              onClick={remove}
-              disabled={saving}
-            />
-          </>
-        }
-      />
+      <div className="flex items-start gap-3">
+        <IconButton
+          icon="chevron-left"
+          label="Quay lại danh sách"
+          variant="outline"
+          onClick={back}
+          className="mt-0.5"
+        />
+        <PageHeader
+          icon="clipboard"
+          title="Chi tiết bệnh án"
+          subtitle={[record.diagnosis, subtitle].filter(Boolean).join(' · ')}
+          className="min-w-0 flex-1"
+          actions={
+            <>
+              <IconButton
+                icon="sparkles"
+                label="Đọc lại bằng AI"
+                onClick={reprocess}
+                disabled={saving}
+              />
+              <IconButton
+                icon="trash"
+                label="Xóa hồ sơ"
+                variant="danger"
+                onClick={remove}
+                disabled={saving}
+              />
+            </>
+          }
+        />
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge status={record.status} />
