@@ -1,6 +1,10 @@
 export const ENDPOINTS = {
   AUTH: { LOGIN: '/auth/login', REGISTER: '/auth/register', ME: '/auth/me' },
-  CHAT: { SEND: '/chat', HISTORY: '/chat/history' },
+  CHAT: {
+    SEND: '/chat',
+    HISTORY: '/chat/history',
+    IMAGE: (id: string, index: number) => `/chat/${id}/image/${index}`,
+  },
   RECORDS: {
     LIST: '/records',
     UPLOAD: '/records/upload',

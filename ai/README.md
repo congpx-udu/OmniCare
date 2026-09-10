@@ -25,6 +25,8 @@ uvicorn app.main:app --reload --port 8000     # http://localhost:8000/health, do
 
 Hoặc bằng Docker ở thư mục gốc repo: `docker compose up -d --build ai`.
 
+Test: `pip install -r requirements-dev.txt && pytest` (không cần khóa LLM).
+
 ## Biến môi trường
 
 | Biến | Mặc định | Ý nghĩa |

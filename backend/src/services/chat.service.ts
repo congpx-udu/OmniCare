@@ -1,3 +1,5 @@
+import { readFile, unlink } from 'node:fs/promises'
+import path from 'node:path'
 import { z } from 'zod'
 import { env } from '../config/env.js'
 import { logger } from '../config/logger.js'
@@ -12,6 +14,25 @@ import { summarizeRecords } from './record.service.js'
 const HISTORY_FOR_AI = 10
 /** Phải lớn hơn LLM_TIMEOUT × 2 (AI service thử lại 1 lần) */
 const AI_TIMEOUT_MS = 70_000
+const UPLOAD_DIR = path.resolve('uploads')
+
+/** Chỉ cho phép file trong uploads/ (tránh path traversal nếu DB bị sửa) */
+function safeImagePath(imagePath: string) {
+  const abs = path.resolve(imagePath)
+  if (!abs.startsWith(UPLOAD_DIR + path.sep)) throw new ApiError(404, 'Không tìm thấy ảnh')
+  return abs
+}
+
+interface Attachment {
+  path: string
+  mime: string
+}
+
+/** Phần trả cho client: chỉ chỉ số + mime, ảnh lấy qua GET /chat/:id/image/:index */
+export interface PublicAttachment {
+  index: number
+  mime: string
+}
 
 // ---------- Schema response của AI service (validate trước khi dùng) ----------
 
@@ -19,14 +40,16 @@ const mealSchema = z.object({
   name: z.string(),
   why: z.string(),
   ingredients: z.array(z.string()).default([]),
+  missing: z.array(z.string()).default([]),
   notes: z.string().nullable().default(null),
 })
 
 const conditionSchema = z.object({ name: z.string(), why: z.string() })
 
 const aiResponseSchema = z.object({
-  mode: z.enum(['food', 'symptom']),
+  mode: z.enum(['food', 'symptom', 'health']),
   reply: z.string().min(1),
+  intent: z.enum(['symptom', 'food', 'general']).default('general'),
   risk_level: z.enum(['none', 'home', 'doctor', 'emergency']).default('none'),
   possible_conditions: z.array(conditionSchema).default([]),
   suggested_specialty: z.string().nullable().default(null),
@@ -43,6 +66,8 @@ type AiResponse = z.infer<typeof aiResponseSchema>
 
 /** Phần có cấu trúc lưu vào ChatMessage.meta và trả cho client */
 export interface AssistantMeta {
+  /** Luồng health: lượt này AI hiểu người dùng hỏi gì */
+  intent: AiResponse['intent']
   riskLevel: AiResponse['risk_level']
   possibleConditions: AiResponse['possible_conditions']
   suggestedSpecialty: string | null
@@ -60,6 +85,7 @@ export interface PublicChatMessage {
   role: 'user' | 'assistant'
   content: string
   meta: AssistantMeta | null
+  attachments: PublicAttachment[]
   createdAt: string
 }
 
@@ -69,6 +95,7 @@ interface MessageSource {
   role: string
   content: string
   meta?: unknown
+  attachments?: Attachment[]
   createdAt?: Date
 }
 
@@ -79,8 +106,19 @@ function toPublicMessage(m: MessageSource): PublicChatMessage {
     role: m.role as 'user' | 'assistant',
     content: m.content,
     meta: m.role === 'assistant' && m.meta ? (m.meta as AssistantMeta) : null,
+    attachments: (m.attachments ?? []).map((a, index) => ({ index, mime: a.mime })),
     createdAt: m.createdAt ? m.createdAt.toISOString() : new Date().toISOString(),
   }
+}
+
+async function removeFiles(paths: string[]) {
+  await Promise.all(
+    paths.map((p) =>
+      unlink(safeImagePath(p)).catch((err: unknown) =>
+        logger.warn({ err }, 'failed to delete chat attachment'),
+      ),
+    ),
+  )
 }
 
 // ---------- Gom ngữ cảnh (ẩn danh: không tên, SĐT, email) ----------
@@ -127,18 +165,32 @@ async function callAi(payload: unknown): Promise<AiResponse> {
 
 // ---------- Public API ----------
 
-export async function sendMessage(userId: string, input: SendChatInput) {
-  const [profile, weather, recordsSummary, recent] = await Promise.all([
+export async function sendMessage(
+  userId: string,
+  input: SendChatInput,
+  files: Express.Multer.File[] = [],
+) {
+  const [profile, weather, recordsSummary, recent, images] = await Promise.all([
     getProfile(userId),
     safeWeather(input.location),
     summarizeRecords(userId),
     ChatMessage.find({ user: userId, mode: input.mode })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .limit(HISTORY_FOR_AI)
       .lean(),
+    // Ảnh đính kèm: đọc file đã upload → base64 cho AI (không lưu base64 vào DB)
+    Promise.all(
+      files.map(async (f) => ({
+        image_base64: (await readFile(f.path)).toString('base64'),
+        mime_type: f.mimetype,
+      })),
+    ),
   ])
+  const attachments: Attachment[] = files.map((f) => ({ path: f.path, mime: f.mimetype }))
 
   const history = recent.reverse().map((m) => ({ role: m.role, content: m.content }))
+  // Tủ bếp chỉ có ý nghĩa với luồng food; bỏ trùng, giữ nguyên thứ tự nhập
+  const pantry = input.mode !== 'symptom' ? [...new Set(input.pantry ?? [])] : []
 
   const aiPayload = {
     mode: input.mode,
@@ -157,11 +209,21 @@ export async function sendMessage(userId: string, input: SendChatInput) {
     ...localTime(weather),
     // Tóm tắt bệnh án đã xác nhận (AI-03): chỉ ngày, chẩn đoán, tên thuốc
     records_summary: recordsSummary,
+    pantry,
+    images,
   }
 
-  const ai = await callAi(aiPayload)
+  let ai: AiResponse
+  try {
+    ai = await callAi(aiPayload)
+  } catch (err) {
+    // AI lỗi thì không giữ lại ảnh mồ côi trên đĩa
+    await removeFiles(attachments.map((a) => a.path))
+    throw err
+  }
 
   const meta: AssistantMeta = {
+    intent: ai.intent,
     riskLevel: ai.risk_level,
     possibleConditions: ai.possible_conditions,
     suggestedSpecialty: ai.suggested_specialty,
@@ -182,7 +244,9 @@ export async function sendMessage(userId: string, input: SendChatInput) {
       context: {
         feeling: input.feeling ?? null,
         weather: weather ? weatherContext(weather) : null,
+        pantry: pantry.length ? pantry : null,
       },
+      attachments,
     },
     { user: userId, mode: input.mode, role: 'assistant', content: ai.reply, meta },
   ])
@@ -198,13 +262,31 @@ export async function sendMessage(userId: string, input: SendChatInput) {
 /** Lịch sử một luồng, thứ tự cũ → mới */
 export async function getHistory(userId: string, query: ChatHistoryQuery) {
   const docs = await ChatMessage.find({ user: userId, mode: query.mode })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .limit(query.limit)
     .lean()
   return docs.reverse().map(toPublicMessage)
 }
 
 export async function clearHistory(userId: string, mode: ChatMode) {
+  const withFiles = await ChatMessage.find({
+    user: userId,
+    mode,
+    'attachments.0': { $exists: true },
+  })
+    .select('attachments')
+    .lean()
   const result = await ChatMessage.deleteMany({ user: userId, mode })
+  await removeFiles(
+    withFiles.flatMap((m) => ((m.attachments ?? []) as Attachment[]).map((a) => a.path)),
+  )
   return { deleted: result.deletedCount }
+}
+
+/** Ảnh đính kèm của một tin (chỉ chủ sở hữu) */
+export async function getAttachment(userId: string, id: string, index: number) {
+  const doc = await ChatMessage.findOne({ _id: id, user: userId }).select('attachments').lean()
+  const a = (doc?.attachments as Attachment[] | undefined)?.[index]
+  if (!a) throw ApiError.notFound('Không tìm thấy ảnh')
+  return { absolutePath: safeImagePath(a.path), mime: a.mime }
 }

@@ -29,7 +29,7 @@ export const fetchProfile = createAsyncThunk<HealthProfile, void, { rejectValue:
       const res = await profileService.get()
       return res.data
     } catch (err) {
-      return rejectWithValue(getApiErrorMessage(err, 'Không tải được hồ sơ sức khỏe'))
+      return rejectWithValue(getApiErrorMessage(err, 'Không tải được hồ sơ cá nhân'))
     }
   },
 )
@@ -71,7 +71,7 @@ const profileSlice = createSlice({
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.status = 'failed'
-        state.error = action.payload ?? 'Không tải được hồ sơ sức khỏe'
+        state.error = action.payload ?? 'Không tải được hồ sơ cá nhân'
       })
       .addCase(saveProfile.pending, (state) => {
         state.saveStatus = 'loading'

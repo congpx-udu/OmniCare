@@ -1,156 +1,296 @@
-import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Alert, MedicalDisclaimer } from '@/components/common'
-import { ROUTES } from '@/constants'
+import { useCallback, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Alert, EmptyState, IconButton, MedicalDisclaimer, SectionCard } from '@/components/common'
+import {
+  HeroBanner,
+  ShortcutCard,
+  SleepBarsCard,
+  StatCard,
+  WeightTrendCard,
+} from '@/components/dashboard'
+import { NavIcon } from '@/components/layout'
+import { RecordCard } from '@/components/records'
+import { WeatherInsightCard } from '@/components/weather'
+import { BMI_LABELS, ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
+import { useGeolocation } from '@/hooks/useGeolocation'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchProfile } from '@/redux/slices/profileSlice'
 import { fetchRecords } from '@/redux/slices/recordsSlice'
-import { fetchAdvice } from '@/redux/slices/trackingSlice'
-import { fetchWeather } from '@/redux/slices/weatherSlice'
-import { RecordCard } from '@/components/records'
-import { WeatherSummaryCard } from '@/components/weather'
+import { fetchAdvice, fetchLogs } from '@/redux/slices/trackingSlice'
+import { fetchWeather, fetchWeatherInsight } from '@/redux/slices/weatherSlice'
+import type { NavIconName } from '@/components/layout/NavIcon'
 
-const SHORTCUTS = [
+const SHORTCUTS: ReadonlyArray<{ to: string; icon: NavIconName; title: string; desc: string }> = [
   {
     to: `${ROUTES.CHAT}?mode=symptom`,
-    title: 'Hỏi AI về cảm nhận hôm nay',
-    desc: 'Mô tả triệu chứng, nhận nhóm vấn đề có thể liên quan, mức độ và nơi nên khám.',
-    accent: 'bg-secondary',
+    icon: 'stethoscope',
+    title: 'Hỏi triệu chứng',
+    desc: 'Đánh giá sơ bộ',
   },
-  {
-    to: `${ROUTES.CHAT}?mode=food`,
-    title: 'Gợi ý bữa ăn hôm nay',
-    desc: 'Món ăn hợp thời tiết tại nơi bạn ở, tránh dị ứng và bệnh nền.',
-    accent: 'bg-secondary-300',
-  },
-  {
-    to: ROUTES.RECORDS,
-    title: 'Hồ sơ bệnh án',
-    desc: 'Chụp đơn thuốc, bệnh án in máy để OCR và lưu hồ sơ.',
-    accent: 'bg-tertiary',
-  },
-  {
-    to: ROUTES.TRACKING,
-    title: 'Theo dõi sức khỏe',
-    desc: 'Ghi chỉ số, hoạt động mỗi ngày; AI phân tích và đề xuất cải thiện.',
-    accent: 'bg-tertiary-700',
-  },
-  {
-    to: ROUTES.PROFILE,
-    title: 'Hồ sơ sức khỏe',
-    desc: 'Chiều cao, cân nặng, bệnh nền, dị ứng để AI cá nhân hóa lời khuyên.',
-    accent: 'bg-primary',
-  },
+  { to: `${ROUTES.CHAT}?mode=food`, icon: 'food', title: 'Gợi ý món ăn', desc: 'Theo thời tiết' },
+  { to: ROUTES.RECORDS, icon: 'upload', title: 'Tải bệnh án', desc: 'AI đọc đơn thuốc' },
+  { to: ROUTES.PROFILE, icon: 'profile', title: 'Hồ sơ cá nhân', desc: 'Bệnh nền, dị ứng' },
 ]
 
-/** Trang đầu tiên sau đăng nhập. Giai đoạn 5 sẽ thêm nhắc thuốc, chỉ số, cảnh báo thời tiết. */
+/** Màu chữ cho AQI 1-5 của OpenWeather */
+const AQI_TONE: Record<number, string> = {
+  1: 'text-secondary-700',
+  2: 'text-secondary-600',
+  3: 'text-warning',
+  4: 'text-danger',
+  5: 'text-danger',
+}
+
+/** Trang Tổng quan (bento): banner chào + thời tiết, chỉ số & biểu đồ bên trái, AI/bệnh án/nhật ký bên phải */
 export function DashboardPage() {
   const { user } = useAuth()
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const { profile, status } = useAppSelector((s) => s.profile)
   const weather = useAppSelector((s) => s.weather)
   const records = useAppSelector((s) => s.records)
   const tracking = useAppSelector((s) => s.tracking)
+  const geo = useGeolocation()
+  const askedGeo = useRef(false)
 
   useEffect(() => {
     if (status === 'idle') void dispatch(fetchProfile())
   }, [dispatch, status])
 
-  // Có vị trí nhớ trong phiên thì tải thời tiết cho thẻ tổng quan
+  const locate = useCallback(() => {
+    geo.request((c) => void dispatch(fetchWeather({ lat: c.lat, lon: c.lng })))
+  }, [geo, dispatch])
+
+  // Có vị trí nhớ trong phiên thì tải thời tiết ngay; mới đăng nhập (chưa có vị trí) thì tự xin
+  // định vị luôn ở đây, không đợi người dùng mở trang Thời tiết
   useEffect(() => {
     if (weather.query && !weather.data && weather.status === 'idle') {
       void dispatch(fetchWeather(weather.query))
+      return
     }
-  }, [dispatch, weather.query, weather.data, weather.status])
+    if (!weather.query && !askedGeo.current) {
+      askedGeo.current = true
+      locate()
+    }
+  }, [dispatch, weather.query, weather.data, weather.status, locate])
+
+  useEffect(() => {
+    if (weather.data && weather.query && weather.insightStatus === 'idle') {
+      void dispatch(fetchWeatherInsight(weather.query))
+    }
+  }, [dispatch, weather.data, weather.query, weather.insightStatus])
+
+  const retryInsight = useCallback(() => {
+    if (weather.query) void dispatch(fetchWeatherInsight(weather.query))
+  }, [dispatch, weather.query])
 
   useEffect(() => {
     if (records.listStatus === 'idle') void dispatch(fetchRecords({ limit: 3 }))
   }, [dispatch, records.listStatus])
 
   useEffect(() => {
+    if (tracking.logsStatus === 'idle') void dispatch(fetchLogs(30))
+  }, [dispatch, tracking.logsStatus])
+
+  useEffect(() => {
     if (tracking.adviceStatus === 'idle') void dispatch(fetchAdvice())
   }, [dispatch, tracking.adviceStatus])
+
+  const logs = tracking.logs
+  // Nhật ký sắp xếp tăng dần theo ngày, lấy giá trị gần nhất có ghi
+  const latestHeartRate = [...logs].reverse().find((l) => l.heartRate !== null)?.heartRate ?? null
+  const latestSleep = [...logs].reverse().find((l) => l.sleepHours !== null)?.sleepHours ?? null
+  const air = weather.data?.airQuality ?? null
+  const bmi = profile?.bmi ?? null
+  const bmiLabel = bmi !== null ? (BMI_LABELS.find((b) => bmi < b.max) ?? BMI_LABELS.at(-1)) : null
 
   const latestAdvice = tracking.advice[0] ?? null
   const latestRecord = records.items[0] ?? null
   const needsProfile = profile !== null && !profile.isComplete
+  const doneCount = latestAdvice?.suggestions.filter((s) => s.done).length ?? 0
+  const nextSuggestion = latestAdvice?.suggestions.find((s) => !s.done) ?? null
+
   return (
-    <section className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl">Xin chào, {user?.fullName ?? 'bạn'} 👋</h1>
-        <p className="text-neutral-600">
-          Trợ lý sức khỏe của bạn đã sẵn sàng. Chọn một tính năng để bắt đầu.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <HeroBanner
+        name={user?.fullName ?? 'bạn'}
+        weather={weather.data}
+        weatherLoading={weather.status === 'loading' || geo.loading}
+      />
 
       {needsProfile && (
-        <Alert variant="warning">
-          Hồ sơ sức khỏe của bạn chưa đủ chiều cao, cân nặng và ngày sinh.{' '}
-          <Link to={ROUTES.PROFILE} className="font-semibold underline">
-            Hoàn thiện ngay
-          </Link>{' '}
-          để trợ lý AI đưa ra gợi ý sát với thể trạng của bạn.
+        <Alert variant="warning" className="flex items-center gap-2">
+          <NavIcon name="info" className="size-4 shrink-0" />
+          <span>
+            Hồ sơ cá nhân chưa có chiều cao và ngày sinh.{' '}
+            <Link to={ROUTES.PROFILE} className="font-semibold underline">
+              Hoàn thiện ngay
+            </Link>
+          </span>
         </Alert>
       )}
 
-      <WeatherSummaryCard
-        data={weather.data}
-        loading={weather.status === 'loading'}
-        insightSummary={weather.insight?.summary ?? null}
-      />
+      <div className="grid gap-6 xl:grid-cols-12">
+        {/* Cột trái: chỉ số + biểu đồ */}
+        <div className="space-y-6 xl:col-span-8">
+          <div className="grid grid-cols-2 gap-4 2xl:grid-cols-4">
+            <StatCard
+              label="Nhịp tim"
+              icon="heart"
+              value={latestHeartRate !== null ? String(latestHeartRate) : '—'}
+              unit={latestHeartRate !== null ? 'bpm' : undefined}
+              sub={latestHeartRate === null ? 'Chưa ghi' : undefined}
+              to={ROUTES.TRACKING}
+            />
+            <StatCard
+              label="Giấc ngủ"
+              icon="moon"
+              value={latestSleep !== null ? latestSleep.toFixed(1) : '—'}
+              unit={latestSleep !== null ? 'giờ' : undefined}
+              sub={latestSleep === null ? 'Chưa ghi' : undefined}
+              to={ROUTES.TRACKING}
+            />
+            <StatCard
+              label="Không khí"
+              icon="wind"
+              value={air ? air.label : '—'}
+              sub={air ? `AQI ${air.aqi}/5 · PM2.5 ${air.pm25}` : 'Chọn vị trí'}
+              tone={air ? AQI_TONE[air.aqi] : undefined}
+              to={ROUTES.WEATHER}
+            />
+            <StatCard
+              label="BMI"
+              icon="scale"
+              value={bmi !== null ? bmi.toFixed(1) : '—'}
+              sub={bmiLabel?.label ?? (profile?.heightCm ? 'Ghi cân nặng' : 'Cần chiều cao')}
+              tone={bmiLabel?.tone}
+              to={ROUTES.PROFILE}
+            />
+          </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {SHORTCUTS.map((s) => (
-          <Link
-            key={s.to}
-            to={s.to}
-            className="group rounded-card bg-surface hover:border-primary-200 border border-neutral-200 p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
-          >
-            <span className={`mb-4 block h-1.5 w-10 rounded-full ${s.accent}`} />
-            <h3 className="group-hover:text-secondary text-lg">{s.title}</h3>
-            <p className="mt-1 text-sm text-neutral-600">{s.desc}</p>
-          </Link>
-        ))}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <WeightTrendCard logs={logs} profileWeightKg={profile?.weightKg ?? null} />
+            <SleepBarsCard logs={logs} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {SHORTCUTS.map((s) => (
+              <ShortcutCard key={s.to} {...s} />
+            ))}
+          </div>
+        </div>
+
+        {/* Cột phải: AI hôm nay */}
+        {/* Ở xl: cột phải cao đúng bằng cột trái, nội dung dư cuộn bên trong thẻ */}
+        <div className="relative xl:col-span-4">
+          <div className="xl:absolute xl:inset-0">
+            {weather.data ? (
+              <WeatherInsightCard
+                insight={weather.insight}
+                status={weather.insightStatus}
+                error={weather.insightError}
+                onRetry={retryInsight}
+                compact
+              />
+            ) : (
+              // Chưa có thời tiết: đang định vị/tải thì hiện skeleton có sẵn trong thẻ,
+              // bị từ chối định vị thì hiện lại nút "Thử lại" để bấm định vị thủ công
+              <WeatherInsightCard
+                insight={null}
+                status={weather.status === 'loading' || geo.loading ? 'loading' : 'failed'}
+                error={
+                  weather.error ?? geo.error ?? 'Chưa có vị trí để phân tích thời tiết hôm nay.'
+                }
+                onRetry={locate}
+                compact
+              />
+            )}
+          </div>
+        </div>
       </div>
 
-      {latestAdvice && (
-        <Link
-          to={ROUTES.TRACKING}
-          className="rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-5 transition hover:shadow-lg"
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SectionCard
+          icon="activity"
+          title="Nhật ký sức khỏe"
+          actions={
+            <IconButton
+              icon="arrow-right"
+              label="Mở theo dõi sức khỏe"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(ROUTES.TRACKING)}
+            />
+          }
         >
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg">Nhật ký sức khỏe</h3>
-            <span className="bg-secondary-50 text-secondary-700 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-              {latestAdvice.suggestions.filter((s) => s.done).length}/
-              {latestAdvice.suggestions.length} đề xuất đã làm
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-neutral-700">{latestAdvice.summary}</p>
-          {latestAdvice.suggestions.find((s) => !s.done) && (
-            <p className="text-primary mt-2 text-sm font-semibold">
-              Tiếp theo: {latestAdvice.suggestions.find((s) => !s.done)!.title}
-            </p>
+          {latestAdvice ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                  <div
+                    className="bg-secondary h-full rounded-full transition-[width]"
+                    style={{
+                      width: `${latestAdvice.suggestions.length ? (doneCount / latestAdvice.suggestions.length) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-secondary-700 text-xs font-semibold whitespace-nowrap">
+                  {doneCount}/{latestAdvice.suggestions.length} đề xuất
+                </span>
+              </div>
+              <p className="line-clamp-3 text-sm text-neutral-700">{latestAdvice.summary}</p>
+              {nextSuggestion && (
+                <p className="bg-secondary-50 text-secondary-700 flex items-start gap-2 rounded-xl px-3 py-2 text-sm">
+                  <NavIcon name="sparkles" className="mt-0.5 size-4 shrink-0" />
+                  <span className="font-semibold">{nextSuggestion.title}</span>
+                </p>
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              icon="activity"
+              title="Chưa có phân tích"
+              hint="Ghi nhật ký vài ngày rồi nhờ AI phân tích."
+              className="py-6"
+            />
           )}
-        </Link>
-      )}
+        </SectionCard>
 
-      {latestRecord && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg">Bệnh án gần nhất</h2>
-            <Link
-              to={ROUTES.RECORDS}
-              className="text-secondary text-sm font-semibold hover:underline"
-            >
-              Xem tất cả
-            </Link>
-          </div>
-          <RecordCard record={latestRecord} />
-        </div>
-      )}
+        <SectionCard
+          icon="clipboard"
+          title="Bệnh án gần nhất"
+          actions={
+            <IconButton
+              icon="arrow-right"
+              label="Xem tất cả bệnh án"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(ROUTES.RECORDS)}
+            />
+          }
+        >
+          {latestRecord ? (
+            <RecordCard record={latestRecord} />
+          ) : (
+            <EmptyState
+              icon="upload"
+              title={records.listStatus === 'loading' ? 'Đang tải...' : 'Chưa có bệnh án'}
+              className="py-6"
+              action={
+                <IconButton
+                  icon="upload"
+                  label="Tải bệnh án"
+                  variant="primary"
+                  onClick={() => navigate(ROUTES.RECORDS)}
+                />
+              }
+            />
+          )}
+        </SectionCard>
+      </div>
 
       <MedicalDisclaimer />
-    </section>
+    </div>
   )
 }

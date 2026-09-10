@@ -30,8 +30,8 @@ const emptyThread = (): ThreadState => ({
 const pendingId = (requestId: string) => `pending-${requestId}`
 
 const initialState: ChatState = {
-  activeMode: 'symptom',
-  threads: { food: emptyThread(), symptom: emptyThread() },
+  activeMode: 'health',
+  threads: { health: emptyThread(), food: emptyThread(), symptom: emptyThread() },
 }
 
 export const fetchHistory = createAsyncThunk<
@@ -119,6 +119,8 @@ const chatSlice = createSlice({
           role: 'user',
           content: message,
           meta: null,
+          attachments: [],
+          previews: action.meta.arg.previews,
           createdAt: new Date().toISOString(),
         })
       })

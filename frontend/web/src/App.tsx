@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { RouterProvider } from 'react-router-dom'
+import { FeedbackProvider } from '@/context/FeedbackProvider'
 import { ThemeProvider } from '@/context/ThemeProvider'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchMe } from '@/redux/slices/authSlice'
@@ -22,8 +23,10 @@ export default function App() {
   return (
     <Provider store={store}>
       <ThemeProvider>
-        <SessionBootstrap />
-        <RouterProvider router={router} />
+        <FeedbackProvider>
+          <SessionBootstrap />
+          <RouterProvider router={router} />
+        </FeedbackProvider>
       </ThemeProvider>
     </Provider>
   )

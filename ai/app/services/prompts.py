@@ -17,7 +17,7 @@ _FOOD_SCHEMA = """Schema JSON:
 {
   "reply": "đoạn văn 2-4 câu tóm tắt gợi ý, thân thiện",
   "meals": [
-    {"name": "tên món", "why": "vì sao hợp thời tiết/thể trạng (1-2 câu)", "ingredients": ["nguyên liệu chính"], "notes": "lưu ý với bệnh nền/dị ứng hoặc null"}
+    {"name": "tên món", "why": "vì sao hợp thời tiết/thể trạng (1-2 câu)", "ingredients": ["nguyên liệu chính"], "missing": ["nguyên liệu cần mua thêm ngoài tủ bếp; rỗng nếu đủ hoặc không có tủ bếp"], "notes": "lưu ý với bệnh nền/dị ứng hoặc null"}
   ],
   "activities": ["1-3 gợi ý vận động ngắn hợp thời tiết, có thể rỗng"],
   "follow_up_questions": ["0-2 câu hỏi ngắn để gợi ý sát hơn"]
@@ -40,6 +40,26 @@ Quy tắc risk_level:
 - "home": triệu chứng nhẹ, mới xuất hiện, có thể theo dõi và chăm sóc tại nhà; nêu rõ khi nào cần đi khám.
 - "none": chỉ trò chuyện, chưa có triệu chứng cụ thể.
 possible_conditions tối đa 3 mục, luôn là "có thể", không khẳng định. Không nêu thuốc + liều."""
+
+
+_HEALTH_SCHEMA = """Schema JSON:
+{
+  "intent": "symptom | food | general — lượt này người dùng chủ yếu hỏi gì",
+  "reply": "đoạn văn 2-5 câu, thân thiện, trả lời trực tiếp câu hỏi",
+  "risk_level": "none | home | doctor | emergency (chỉ khi intent=symptom, còn lại 'none')",
+  "possible_conditions": [{"name": "nhóm vấn đề CÓ THỂ liên quan", "why": "vì sao (1 câu)"}],
+  "suggested_specialty": "chuyên khoa nên khám hoặc null",
+  "facility_type": "'phòng khám đa khoa' | 'bệnh viện' | 'cấp cứu 115' | null",
+  "meals": [
+    {"name": "tên món", "why": "vì sao hợp (1-2 câu)", "ingredients": ["nguyên liệu chính"], "missing": ["cần mua thêm ngoài tủ bếp, rỗng nếu đủ"], "notes": "lưu ý bệnh nền/dị ứng/triệu chứng hoặc null"}
+  ],
+  "activities": ["0-3 gợi ý vận động ngắn, chỉ khi phù hợp"],
+  "follow_up_questions": ["0-3 câu hỏi ngắn tiếp theo"]
+}
+Quy tắc chung: đây là MỘT cuộc trò chuyện liên tục — mọi lượt phải bám theo những gì đã nói trước đó. Nếu người dùng vừa kể triệu chứng rồi hỏi ăn gì, món phải hợp với triệu chứng đó (ví dụ đau dạ dày: cháo, súp, tránh chua cay; sốt: nhiều nước, dễ tiêu). Nếu người dùng hỏi triệu chứng sau khi nói về bữa ăn, cân nhắc thức ăn đã ăn có liên quan không.
+Khi intent=symptom: điền risk_level, possible_conditions (≤3, luôn "có thể"), suggested_specialty, facility_type; meals rỗng trừ khi người dùng cũng hỏi ăn gì. Quy tắc risk_level: "emergency" khi có dấu hiệu nguy hiểm (đau ngực dữ dội, khó thở nặng, liệt/méo miệng/nói khó đột ngột, co giật, chảy máu nhiều, sốt cao kèm cứng cổ/lơ mơ, dị ứng sưng môi/họng, ý định tự hại) — reply mở đầu bằng khuyên gọi 115; "doctor" khi kéo dài > 3 ngày, sốt cao, đau tăng dần, có bệnh nền liên quan; "home" khi nhẹ, mới xuất hiện; "none" khi chỉ trò chuyện.
+Khi intent=food: điền 2-4 meals phổ biến, dễ tìm ở Việt Nam, hợp thời tiết và bữa gần nhất theo giờ địa phương (5-10h sáng, 10-14h trưa, 14-17h xế, 17-21h tối, sau 21h món nhẹ); TUYỆT ĐỐI tránh nguyên liệu dị ứng kể cả dạng phái sinh (dị ứng hải sản: tránh mắm tôm, mắm ruốc, nước mắm cá; dị ứng sữa: phô mai, bơ, kem; dị ứng đậu phộng: dầu lạc); cân nhắc bệnh nền (tiểu đường: ít đường; tăng huyết áp: ít muối). Nếu có tủ bếp thì ưu tiên nguyên liệu đang có và ghi missing. risk_level="none".
+Khi intent=general: trả lời ngắn gọn, các khối còn lại rỗng/null."""
 
 
 def _profile_lines(p: ProfileContext) -> list[str]:
@@ -74,6 +94,8 @@ def _weather_lines(w: WeatherContext | None) -> list[str]:
         parts.append(w.description.lower())
     if w.rain_chance:
         parts.append(f"khả năng mưa {w.rain_chance * 100:.0f}%")
+    if w.air_quality:
+        parts.append(f"chất lượng không khí {w.air_quality}")
     return ["- " + ", ".join(parts)] if parts else ["- (không có dữ liệu thời tiết)"]
 
 
@@ -89,12 +111,36 @@ def build_system_prompt(req: ChatRequest) -> str:
         ctx.append(f"Cảm nhận hôm nay: {req.feeling}")
     if req.records_summary:
         ctx.append(f"Tóm tắt bệnh án đã lưu: {req.records_summary}")
-    schema = _FOOD_SCHEMA if req.mode == "food" else _SYMPTOM_SCHEMA
-    task = (
-        "Nhiệm vụ: gợi ý món ăn (và vận động nhẹ) phù hợp với thời tiết, vị trí và thể trạng."
-        if req.mode == "food"
-        else "Nhiệm vụ: lắng nghe cảm nhận cơ thể, hỏi lại khi cần, nêu nhóm vấn đề có thể liên quan, đánh giá mức độ và hướng đi khám."
-    )
+    if req.images:
+        ctx.append(
+            f"Người dùng gửi kèm {len(req.images)} ảnh. Quy tắc ảnh: mô tả ngắn gọn thứ nhìn thấy và trả lời "
+            "theo ngữ cảnh — ảnh món ăn/nguyên liệu: nhận diện món, ước lượng phù hợp với thể trạng, gợi ý cách ăn "
+            "hoặc thay thế; ảnh vùng da/vết thương/triệu chứng: mô tả dấu hiệu quan sát được, KHÔNG chẩn đoán, "
+            "đánh giá mức độ và khuyên đi khám khi cần (intent=symptom); ảnh đơn thuốc/kết quả xét nghiệm: đọc "
+            "thông tin chính và giải thích dễ hiểu, không thay đổi hay bổ sung liều. Ảnh mờ hoặc không liên quan "
+            "thì nói rõ."
+        )
+    if req.mode in ("food", "health") and req.pantry:
+        ctx.append("Tủ bếp (nguyên liệu đang có): " + ", ".join(req.pantry))
+        ctx.append(
+            "Quy tắc tủ bếp: ưu tiên món nấu được chủ yếu từ nguyên liệu đang có; "
+            "chỉ được thêm gia vị cơ bản và tối đa 1-2 nguyên liệu dễ mua, ghi rõ vào missing của từng món; "
+            "ingredients phải nêu nguyên liệu trong tủ bếp được dùng. "
+            "Nếu tủ bếp có thứ người dùng dị ứng thì không dùng và nhắc trong notes."
+        )
+    if req.mode == "health":
+        schema = _HEALTH_SCHEMA
+        task = (
+            "Nhiệm vụ: trợ lý sức khỏe toàn diện trong MỘT cuộc trò chuyện — vừa lắng nghe cảm nhận cơ thể "
+            "(hỏi lại khi cần, nêu nhóm vấn đề có thể liên quan, mức độ, hướng đi khám), vừa gợi ý món ăn và "
+            "vận động hợp thời tiết, vị trí, thể trạng và những gì người dùng đã kể. Tự nhận biết mỗi lượt người dùng đang hỏi gì."
+        )
+    elif req.mode == "food":
+        schema = _FOOD_SCHEMA
+        task = "Nhiệm vụ: gợi ý món ăn (và vận động nhẹ) phù hợp với thời tiết, vị trí và thể trạng."
+    else:
+        schema = _SYMPTOM_SCHEMA
+        task = "Nhiệm vụ: lắng nghe cảm nhận cơ thể, hỏi lại khi cần, nêu nhóm vấn đề có thể liên quan, đánh giá mức độ và hướng đi khám."
     return "\n\n".join([_COMMON, task, "\n".join(ctx), schema])
 
 

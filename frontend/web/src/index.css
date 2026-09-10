@@ -67,6 +67,8 @@
   /* Nền & bề mặt */
   --color-surface: #ffffff;
   --color-surface-muted: #e6eef8;
+  /* Thẻ tông kem ấm trên nền xanh nhạt (Dashboard, docs/img/Tổng quan.png) */
+  --color-surface-cream: #fbfaf5;
   --color-background: #eef3fa;
 
   /* Trạng thái */
@@ -82,12 +84,105 @@
   --radius-card: 1rem;
 }
 
+/*
+  Thẻ "nổi 3D" cho Dashboard: bóng nhiều lớp (viền sáng trên, bóng gần, bóng xa) và nhấc lên
+  khi hover. Màu bóng lấy từ token primary để hợp bảng màu; tôn trọng prefers-reduced-motion.
+*/
+@utility card-3d {
+  position: relative;
+  transform: translateY(0);
+  /* Màu cạnh dưới; thẻ nền tối ghi đè bằng [--card-edge:...] */
+  --card-edge: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  /* Cạnh dưới dày (giả khối) + bóng gần + bóng xa đậm để thẻ tách hẳn khỏi nền */
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-surface) 95%, transparent),
+    0 3px 0 var(--card-edge),
+    0 6px 10px -2px color-mix(in srgb, var(--color-primary) 18%, transparent),
+    0 18px 30px -10px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    0 36px 56px -24px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 220ms;
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--color-surface) 95%, transparent),
+      0 4px 0 var(--card-edge),
+      0 12px 18px -4px color-mix(in srgb, var(--color-primary) 22%, transparent),
+      0 28px 44px -12px color-mix(in srgb, var(--color-primary) 38%, transparent),
+      0 56px 80px -28px color-mix(in srgb, var(--color-primary) 48%, transparent);
+  }
+  &:active {
+    transform: translateY(-2px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+/* Toast / hộp thoại trượt nhẹ vào */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Lịch chọn ngày (react-day-picker) theo bảng màu */
+.rdp-root {
+  --rdp-accent-color: var(--color-secondary);
+  --rdp-accent-background-color: var(--color-secondary-50);
+  --rdp-day-height: 2.25rem;
+  --rdp-day-width: 2.25rem;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-day_button-border-radius: 0.75rem;
+  --rdp-selected-border: 2px solid var(--color-secondary);
+  --rdp-outside-opacity: 0.4;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--color-neutral-800);
+}
+.rdp-root .rdp-selected .rdp-day_button {
+  background: var(--color-secondary);
+  color: white;
+}
+.rdp-root .rdp-today:not(.rdp-selected) .rdp-day_button {
+  color: var(--color-secondary-700);
+  font-weight: 700;
+}
+.rdp-root .rdp-dropdown {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
 @layer base {
   html {
     @apply antialiased;
   }
   body {
     @apply bg-background font-sans text-neutral-900;
+    /* Nền có ánh teal/sky rất nhẹ phía trên để trang mềm hơn nền phẳng */
+    background-image:
+      radial-gradient(
+        60rem 30rem at 15% -10%,
+        color-mix(in srgb, var(--color-secondary) 10%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        50rem 26rem at 95% 0%,
+        color-mix(in srgb, var(--color-tertiary) 8%, transparent),
+        transparent 70%
+      );
+    background-attachment: fixed;
   }
   h1,
   h2,

@@ -31,18 +31,21 @@ const dateOfBirthSchema = z
 
 export const updateProfileSchema = z.object({
   body: z.object({
+    /** Thông tin tài khoản (User) — hồ sơ cá nhân */
+    fullName: z
+      .string()
+      .trim()
+      .min(2, 'Họ tên tối thiểu 2 ký tự')
+      .max(100, 'Họ tên tối đa 100 ký tự')
+      .optional(),
+    email: z.email('Email không hợp lệ').nullable().optional(),
     heightCm: z
       .number()
       .min(30, 'Chiều cao tối thiểu 30 cm')
       .max(250, 'Chiều cao tối đa 250 cm')
       .nullable()
       .optional(),
-    weightKg: z
-      .number()
-      .min(2, 'Cân nặng tối thiểu 2 kg')
-      .max(500, 'Cân nặng tối đa 500 kg')
-      .nullable()
-      .optional(),
+    // Cân nặng không còn nhập ở hồ sơ: lấy từ nhật ký theo dõi sức khỏe (PUT /tracking/logs/:date)
     dateOfBirth: dateOfBirthSchema.nullable().optional(),
     gender: z
       .enum(['male', 'female', 'other'], { error: 'Giới tính không hợp lệ' })

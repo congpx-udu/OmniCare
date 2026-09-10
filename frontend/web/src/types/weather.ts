@@ -41,6 +41,15 @@ export interface WeatherSnapshot {
     pop: number
     humidity: number
   }>
+  /** Chất lượng không khí (OpenWeather Air Pollution); null khi không lấy được */
+  airQuality: {
+    /** 1 tốt · 2 khá · 3 trung bình · 4 kém · 5 rất kém */
+    aqi: 1 | 2 | 3 | 4 | 5
+    label: string
+    pm25: number
+    pm10: number
+    observedAt: string
+  } | null
   timezoneOffset: number
   fetchedAt: string
   cached: boolean

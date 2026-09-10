@@ -4,7 +4,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-ChatMode = Literal["food", "symptom"]
+# "health": luồng hợp nhất — một cuộc trò chuyện hỏi được cả triệu chứng lẫn món ăn
+ChatMode = Literal["food", "symptom", "health"]
+Intent = Literal["symptom", "food", "general"]
 RiskLevel = Literal["none", "home", "doctor", "emergency"]
 
 
@@ -21,6 +23,8 @@ class WeatherContext(BaseModel):
     description: str | None = None
     wind_kmh: float | None = None
     rain_chance: float | None = Field(default=None, ge=0, le=1)
+    # Ví dụ "Kém (AQI 4/5, PM2.5 55 µg/m³)" — chuỗi đã định dạng sẵn từ backend
+    air_quality: str | None = Field(default=None, max_length=120)
 
 
 class ProfileContext(BaseModel):
@@ -31,6 +35,13 @@ class ProfileContext(BaseModel):
     bmi: float | None = None
     chronic_conditions: list[str] = Field(default_factory=list)
     allergies: list[str] = Field(default_factory=list)
+
+
+class ChatImage(BaseModel):
+    """Ảnh người dùng gửi kèm tin (đồ ăn, vùng da, đơn thuốc...). base64 không kèm tiền tố data:."""
+
+    image_base64: str = Field(min_length=100)
+    mime_type: Literal["image/jpeg", "image/png", "image/webp"]
 
 
 class ChatRequest(BaseModel):
@@ -44,12 +55,18 @@ class ChatRequest(BaseModel):
     time_of_day: str | None = Field(default=None, max_length=20)
     # Tóm tắt bệnh án đã lưu (Giai đoạn 4), để trống nếu chưa có
     records_summary: str | None = Field(default=None, max_length=2000)
+    # Tủ bếp mức 1: nguyên liệu người dùng đang có (chỉ luồng food, không lưu)
+    pantry: list[str] = Field(default_factory=list, max_length=30)
+    # Ảnh kèm lượt hỏi cuối (tối đa 4), backend đọc từ file đã upload
+    images: list[ChatImage] = Field(default_factory=list, max_length=4)
 
 
 class MealSuggestion(BaseModel):
     name: str
     why: str
     ingredients: list[str] = Field(default_factory=list)
+    # Nguyên liệu cần mua thêm ngoài tủ bếp (rỗng nếu đủ hoặc không có tủ bếp)
+    missing: list[str] = Field(default_factory=list)
     notes: str | None = None
 
 
@@ -61,6 +78,8 @@ class PossibleCondition(BaseModel):
 class ChatResponse(BaseModel):
     mode: ChatMode
     reply: str
+    # Luồng health: ý định của lượt này (để frontend hiện khối phù hợp)
+    intent: Intent = "general"
     # Luồng symptom
     risk_level: RiskLevel = "none"
     possible_conditions: list[PossibleCondition] = Field(default_factory=list)

@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert, Input, MedicalDisclaimer } from '@/components/common'
+import { Alert, EmptyState, IconButton, MedicalDisclaimer, PageBanner } from '@/components/common'
+import { NavIcon } from '@/components/layout'
 import { RecordCard, UploadDropzone } from '@/components/records'
 import { ROUTES } from '@/constants'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { clearRecordErrors, fetchRecords, uploadRecord } from '@/redux/slices/recordsSlice'
+import { cn } from '@/utils'
 
-/** Hồ sơ bệnh án (DM-01, DM-02): upload ảnh in máy → AI đọc → timeline theo ngày khám */
+/** Hồ sơ bệnh án (DM-01, DM-02): upload ảnh in máy → AI đọc → danh sách theo ngày khám */
 export function RecordsPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { items, listStatus, listError, uploading, uploadError } = useAppSelector((s) => s.records)
   const [q, setQ] = useState('')
   const [year, setYear] = useState<number | ''>('')
+  const [showUpload, setShowUpload] = useState(false)
+  const [showFilter, setShowFilter] = useState(false)
 
   useEffect(() => {
     if (listStatus === 'idle') void dispatch(fetchRecords())
@@ -46,77 +50,117 @@ export function RecordsPage() {
     }
   }
 
+  const uploadOpen = showUpload || items.length === 0
+  const filtering = year !== ''
+
   return (
-    <section className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl">Hồ sơ bệnh án</h1>
-        <p className="text-neutral-600">
-          Chụp đơn thuốc, phiếu khám, kết quả xét nghiệm in máy. Trợ lý AI đọc và bóc tách, bạn kiểm
-          tra lại rồi lưu. Hồ sơ đã lưu giúp trợ lý hiểu tiền sử của bạn khi trò chuyện.
-        </p>
-      </div>
+    <section className="space-y-5">
+      <PageBanner
+        icon="clipboard"
+        title="Hồ sơ bệnh án"
+        subtitle={`${items.length} bệnh án · AI đọc đơn thuốc, phiếu khám in máy`}
+        actions={
+          <>
+            {years.length > 0 && (
+              <IconButton
+                icon="filter"
+                label="Lọc theo năm"
+                variant="glass"
+                active={showFilter || filtering}
+                onClick={() => setShowFilter((v) => !v)}
+              />
+            )}
+            <IconButton
+              icon={uploadOpen && items.length > 0 ? 'close' : 'upload'}
+              label={uploadOpen && items.length > 0 ? 'Đóng khung tải' : 'Tải bệnh án'}
+              variant="glass"
+              active={uploadOpen && items.length > 0}
+              onClick={() => setShowUpload((v) => !v)}
+              disabled={items.length === 0}
+            />
+          </>
+        }
+      />
 
       {uploadError && <Alert variant="error">{uploadError}</Alert>}
-      <UploadDropzone uploading={uploading} onUpload={onUpload} />
+      {uploadOpen && <UploadDropzone uploading={uploading} onUpload={onUpload} />}
 
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-56 flex-1">
-          <Input
-            label="Tìm kiếm"
-            placeholder="Chẩn đoán, cơ sở, tên thuốc..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        {years.length > 0 && (
-          <div className="space-y-1.5">
-            <span className="font-heading text-primary block text-sm font-semibold">Năm</span>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setYear('')}
-                className={
-                  year === ''
-                    ? 'bg-primary rounded-full px-3 py-1.5 text-xs font-semibold text-white'
-                    : 'hover:border-primary rounded-full border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700'
-                }
-              >
-                Tất cả
-              </button>
-              {years.map((y) => (
+      {items.length > 0 && (
+        <div className="space-y-3">
+          <label className="relative block">
+            <span className="sr-only">Tìm kiếm hồ sơ</span>
+            <NavIcon
+              name="search"
+              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-neutral-400"
+            />
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm chẩn đoán, thuốc..."
+              className="bg-surface focus:border-tertiary focus:ring-tertiary/30 w-full rounded-xl border border-neutral-200 py-2.5 pr-3.5 pl-10 text-sm shadow-sm placeholder:text-neutral-400 focus:ring-2 focus:outline-none"
+            />
+          </label>
+
+          {(showFilter || filtering) && years.length > 0 && (
+            <div
+              className="flex flex-wrap items-center gap-1.5"
+              role="group"
+              aria-label="Lọc theo năm"
+            >
+              <NavIcon name="calendar" className="text-secondary mr-1 size-4" />
+              {(['', ...years] as Array<number | ''>).map((y) => (
                 <button
-                  key={y}
+                  key={String(y)}
                   type="button"
+                  aria-pressed={year === y}
                   onClick={() => setYear(y)}
-                  className={
+                  className={cn(
+                    'cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition',
                     year === y
-                      ? 'bg-primary rounded-full px-3 py-1.5 text-xs font-semibold text-white'
-                      : 'hover:border-primary rounded-full border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700'
-                  }
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-surface hover:border-primary border border-neutral-200 text-neutral-700',
+                  )}
                 >
-                  {y}
+                  {y === '' ? 'Tất cả' : y}
                 </button>
               ))}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {listStatus === 'failed' && listError && <Alert variant="error">{listError}</Alert>}
 
       {listStatus === 'loading' && items.length === 0 ? (
-        <p className="text-sm text-neutral-500">Đang tải hồ sơ...</p>
-      ) : visible.length === 0 ? (
-        <div className="rounded-card border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
-          {items.length === 0
-            ? 'Chưa có hồ sơ nào. Tải ảnh đầu tiên ở phía trên.'
-            : 'Không có hồ sơ khớp bộ lọc.'}
+        <div className="space-y-3" aria-busy aria-label="Đang tải hồ sơ">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-card h-24 animate-pulse bg-neutral-200" />
+          ))}
         </div>
+      ) : items.length === 0 && listStatus !== 'loading' ? null : visible.length === 0 ? (
+        <EmptyState
+          icon="search"
+          title="Không có hồ sơ khớp"
+          hint="Thử từ khóa khác hoặc bỏ lọc năm."
+          action={
+            filtering || q ? (
+              <IconButton
+                icon="close"
+                label="Bỏ lọc"
+                variant="outline"
+                onClick={() => {
+                  setQ('')
+                  setYear('')
+                }}
+              />
+            ) : undefined
+          }
+        />
       ) : (
-        <ol className="relative space-y-3 border-l border-neutral-200 pl-5">
+        <ol className="grid gap-3 md:grid-cols-2">
           {visible.map((r) => (
-            <li key={r.id} className="relative">
-              <span className="bg-secondary absolute top-5 -left-[1.6rem] size-2.5 rounded-full ring-4 ring-white" />
+            <li key={r.id}>
               <RecordCard record={r} />
             </li>
           ))}

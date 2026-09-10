@@ -60,6 +60,7 @@ Lỗi thường gặp: frontend báo `502 Bad Gateway` tại `/api/*` → backen
 | `npm run build` | Biên dịch TypeScript ra `dist/` |
 | `npm start` | Chạy bản build `node dist/server.js` |
 | `npm run typecheck` | `tsc --noEmit` |
+npm test           # vitest + supertest, cần MONGO_URI_TEST (mặc định mongodb://localhost:27017/omnicare_test)
 | `npm run format` | Prettier toàn bộ `src/` |
 
 ## Biến môi trường
@@ -151,16 +152,17 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | POST | `/auth/register` | ⏱ 5/giờ/IP (prod). Đăng ký `{ fullName, phone, password, email? }` → `{ user }` (không trả token, client chuyển về trang đăng nhập) | ✅ |
 | POST | `/auth/login` | ⏱ 10/15 phút/IP (prod). Đăng nhập `{ phone, password }` → `{ token, user }`. `phone` nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx` | ✅ |
 | GET 🔒 | `/auth/me` | Thông tin người dùng hiện tại | ✅ |
-| POST 🔒 | `/chat` | ⏱ 30/15 phút/IP (prod). `{ mode: food\|symptom, message, feeling?, location?: {lat,lon}\|{city} }` → `{ userMessage, assistantMessage (meta: riskLevel, meals, possibleConditions...), disclaimer }`. Gom hồ sơ ẩn danh + thời tiết + 10 tin gần nhất gửi AI | ✅ |
-| GET 🔒 | `/chat/history?mode=&limit=` | Lịch sử một luồng, cũ → mới | ✅ |
+| POST 🔒 | `/chat` | ⏱ 30/15 phút/IP (prod). JSON hoặc multipart (`images[]` ≤4 ảnh JPEG/PNG/WEBP ≤10MB, các trường có cấu trúc gửi dạng JSON string). `{ mode: health\|food\|symptom, message, feeling?, location?: {lat,lon}\|{city}, pantry?: string[] (≤30, nguyên liệu đang có, không lưu riêng) }` → `{ userMessage, assistantMessage (meta: intent, riskLevel, meals, possibleConditions...), disclaimer }`. `health` là luồng hợp nhất (frontend dùng): một cuộc trò chuyện hỏi được cả triệu chứng lẫn món ăn, AI trả `intent` từng lượt; `food`/`symptom` giữ cho lịch sử cũ. Gom hồ sơ ẩn danh + thời tiết + 10 tin gần nhất gửi AI | ✅ |
+| GET 🔒 | `/chat/history?mode=&limit=` | Lịch sử một luồng, cũ → mới; tin user có `attachments[{index, mime}]` | ✅ |
+| GET 🔒 | `/chat/:id/image/:index` | Ảnh đính kèm tin (chỉ chủ sở hữu; xóa lịch sử thì xóa file) | ✅ |
 | DELETE 🔒 | `/chat/history?mode=` | Xóa lịch sử một luồng | ✅ |
 | POST 🔒 | `/records/upload` | ⏱ 20/giờ/IP (prod). multipart `images[]` (1–8 trang cùng bộ hồ sơ, mỗi ảnh JPEG/PNG/WEBP ≤10MB) + `type?`. Lưu ảnh, gọi AI `/ocr` một lần cho tất cả trang và gộp thành một kết quả, trả record `status: needs_review` (hoặc `failed` kèm `errorMessage`) | ✅ |
 | GET 🔒 | `/records/:id/image/:page` | Ảnh trang thứ `page` (0-based, chỉ chủ sở hữu) | ✅ |
 | POST 🔒 | `/records/:id/reprocess` | OCR lại ảnh đã lưu | ✅ |
 | GET 🔒 | `/records?year=&q=&limit=`, `/records/:id` | Danh sách theo ngày khám giảm dần (`q` tìm chẩn đoán, cơ sở, tên thuốc, ghi chú), chi tiết | ✅ |
 | PUT/DELETE 🔒 | `/records/:id` | Sửa tay `{ facility?, doctor?, visitDate?, diagnosis?, medicationTable?: {columns[{key,label}], rows[]} (bảng đúng cột tài liệu, backend suy ra `medications` chuẩn hóa từ bảng), notes?, confirm? }` (loại tài liệu do AI nhận dạng) (`confirm: true` → `done`) / xóa hồ sơ và ảnh | ✅ |
-| GET 🔒 | `/profile` | Hồ sơ sức khỏe của user hiện tại (trả hồ sơ rỗng nếu chưa có). Kèm `bmi`, `age`, `isComplete` tính sẵn | ✅ |
-| PUT 🔒 | `/profile` | Upsert `{ heightCm?, weightKg?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên | ✅ |
+| GET 🔒 | `/profile` | Hồ sơ cá nhân của user hiện tại (trả hồ sơ rỗng nếu chưa có): `fullName`, `email`, `phone` từ tài khoản + chiều cao, ngày sinh, giới tính, bệnh nền, dị ứng. Kèm `weightKg`/`weightDate` (cân nặng mới nhất trong nhật ký theo dõi), `bmi`, `age`, `isComplete` (đủ chiều cao + ngày sinh) | ✅ |
+| PUT 🔒 | `/profile` | Upsert `{ fullName?, email? (null = bỏ), heightCm?, dateOfBirth? (yyyy-mm-dd), gender? (male|female|other), chronicConditions?[], allergies?[] }`. Gửi `null` để xóa một trường; trường không gửi giữ nguyên. Cân nặng không nhập ở đây (ghi ở `/tracking/logs/:date`). Email trùng → 409 | ✅ |
 | GET 🔒 | `/context/weather?lat=&lon=` hoặc `?city=` | Thời tiết hiện tại + 8 mốc 3h tới + 5 ngày (OpenWeather, cache 10 phút theo tọa độ làm tròn 2 số). 503 nếu thiếu `OPENWEATHER_API_KEY` | ✅ |
 | GET 🔒 | `/tracking/logs?from=&to=&limit=` | Nhật ký sức khỏe (cũ → mới) | ✅ |
 | PUT 🔒 | `/tracking/logs/:date` | Upsert nhật ký một ngày `{ weightKg?, systolic?, diastolic?, heartRate?, glucose?, sleepHours?, activityMinutes?, activityType?, mood?(1-5), note? }`, null = xóa chỉ số | ✅ |

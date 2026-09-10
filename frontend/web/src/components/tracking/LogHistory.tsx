@@ -1,6 +1,8 @@
-import { ACTIVITY_LABELS, MOOD_LABELS } from '@/constants'
+import { EmptyState, IconButton } from '@/components/common'
+import { NavIcon, type NavIconName } from '@/components/layout'
+import { ACTIVITY_ICONS, ACTIVITY_LABELS, MOOD_LABELS } from '@/constants'
 import type { HealthLog } from '@/types'
-import { formatDate } from '@/utils'
+import { cn, formatDate } from '@/utils'
 
 interface LogHistoryProps {
   logs: HealthLog[]
@@ -9,71 +11,113 @@ interface LogHistoryProps {
   limit?: number
 }
 
-/** Danh sách nhật ký gần đây (mới → cũ), bấm để sửa */
+interface Cell {
+  icon: NavIconName
+  label: string
+  value: string
+  tone?: string
+}
+
+function cells(l: HealthLog): Cell[] {
+  const out: Cell[] = []
+  if (l.weightKg !== null) out.push({ icon: 'scale', label: 'Cân nặng', value: `${l.weightKg} kg` })
+  if (l.systolic !== null || l.diastolic !== null)
+    out.push({
+      icon: 'heart',
+      label: 'Huyết áp',
+      value: `${l.systolic ?? '?'}/${l.diastolic ?? '?'}`,
+    })
+  if (l.heartRate !== null)
+    out.push({ icon: 'activity', label: 'Nhịp tim', value: `${l.heartRate} bpm` })
+  if (l.glucose !== null)
+    out.push({ icon: 'droplet', label: 'Đường huyết', value: `${l.glucose} mmol/L` })
+  if (l.sleepHours !== null)
+    out.push({ icon: 'bed', label: 'Giấc ngủ', value: `${l.sleepHours} h` })
+  if (l.activityMinutes !== null || l.activityType)
+    out.push({
+      icon: l.activityType ? ACTIVITY_ICONS[l.activityType] : 'walk',
+      label: l.activityType ? ACTIVITY_LABELS[l.activityType] : 'Vận động',
+      value: `${l.activityMinutes ?? 0}′`,
+    })
+  if (l.mood)
+    out.push({
+      icon: 'smile',
+      label: `Cảm nhận: ${MOOD_LABELS[l.mood].label}`,
+      value: `${l.mood}/5`,
+      tone: MOOD_LABELS[l.mood].tone,
+    })
+  return out
+}
+
+/** Nhật ký gần đây (mới → cũ): mỗi ngày một dòng, chỉ số là icon + số, sửa/xóa bằng nút icon */
 export function LogHistory({ logs, onPick, onDelete, limit = 14 }: LogHistoryProps) {
   const recent = [...logs].reverse().slice(0, limit)
   if (recent.length === 0) {
     return (
-      <p className="rounded-card border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500">
-        Chưa có nhật ký nào. Nhập chỉ số hôm nay ở phía trên.
-      </p>
+      <EmptyState
+        icon="activity"
+        title="Chưa có nhật ký"
+        hint="Ghi chỉ số hôm nay ở phía trên để bắt đầu theo dõi."
+      />
     )
   }
   return (
-    <div className="rounded-card bg-surface overflow-x-auto border border-neutral-200">
-      <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
-        <thead className="bg-surface-muted text-xs text-neutral-500">
-          <tr>
-            <th className="px-3 py-2 font-semibold">Ngày</th>
-            <th className="px-3 py-2 font-semibold">Cân nặng</th>
-            <th className="px-3 py-2 font-semibold">Huyết áp</th>
-            <th className="px-3 py-2 font-semibold">Nhịp tim</th>
-            <th className="px-3 py-2 font-semibold">Đường huyết</th>
-            <th className="px-3 py-2 font-semibold">Ngủ</th>
-            <th className="px-3 py-2 font-semibold">Vận động</th>
-            <th className="px-3 py-2 font-semibold">Cảm nhận</th>
-            <th className="w-16" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100">
-          {recent.map((l) => (
-            <tr key={l.date} className="hover:bg-surface-muted/60">
-              <td className="px-3 py-2">
-                <button
-                  type="button"
-                  onClick={() => onPick(l.date)}
-                  className="text-secondary font-semibold hover:underline"
+    <ul className="space-y-2">
+      {recent.map((l) => {
+        const items = cells(l)
+        return (
+          <li
+            key={l.date}
+            className="bg-surface flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-neutral-200 px-3 py-2 shadow-sm"
+          >
+            <span className="font-heading text-primary inline-flex w-24 shrink-0 items-center gap-1.5 text-sm font-semibold">
+              <NavIcon name="calendar" className="text-secondary size-4" />
+              {formatDate(l.date)}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+              {items.length === 0 && (
+                <span className="text-xs text-neutral-400">Chưa có chỉ số</span>
+              )}
+              {items.map((c) => (
+                <span
+                  key={c.label}
+                  aria-label={`${c.label}: ${c.value}`}
+                  className={cn(
+                    'bg-surface-muted inline-flex h-8 items-center gap-1 rounded-full px-2.5 font-mono text-xs font-semibold text-neutral-700',
+                    c.tone,
+                  )}
                 >
-                  {formatDate(l.date)}
-                </button>
-              </td>
-              <td className="px-3 py-2">{l.weightKg ?? '—'}</td>
-              <td className="px-3 py-2">
-                {l.systolic || l.diastolic ? `${l.systolic ?? '?'}/${l.diastolic ?? '?'}` : '—'}
-              </td>
-              <td className="px-3 py-2">{l.heartRate ?? '—'}</td>
-              <td className="px-3 py-2">{l.glucose ?? '—'}</td>
-              <td className="px-3 py-2">{l.sleepHours ?? '—'}</td>
-              <td className="px-3 py-2">
-                {l.activityMinutes !== null || l.activityType
-                  ? `${l.activityMinutes ?? 0}′ ${l.activityType ? ACTIVITY_LABELS[l.activityType] : ''}`
-                  : '—'}
-              </td>
-              <td className="px-3 py-2">{l.mood ? MOOD_LABELS[l.mood].emoji : '—'}</td>
-              <td className="px-3 py-2 text-right">
-                <button
-                  type="button"
-                  onClick={() => onDelete(l.date)}
-                  aria-label={`Xóa nhật ký ${formatDate(l.date)}`}
-                  className="text-danger text-xs hover:underline"
-                >
-                  Xóa
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                  <NavIcon name={c.icon} className="size-3.5" />
+                  {c.value}
+                </span>
+              ))}
+              {l.note && (
+                <span className="bg-tertiary-50 text-tertiary-700 inline-flex h-8 max-w-48 items-center gap-1 rounded-full px-2.5 text-xs">
+                  <NavIcon name="clipboard" className="size-3.5 shrink-0" />
+                  <span className="truncate">{l.note}</span>
+                </span>
+              )}
+            </div>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <IconButton
+                icon="pencil"
+                label="Sửa nhật ký"
+                size="sm"
+                variant="ghost"
+                onClick={() => onPick(l.date)}
+              />
+              <IconButton
+                icon="trash"
+                label="Xóa nhật ký"
+                size="sm"
+                variant="ghost"
+                className="hover:bg-danger/10 hover:text-danger"
+                onClick={() => onDelete(l.date)}
+              />
+            </div>
+          </li>
+        )
+      })}
+    </ul>
   )
 }

@@ -23,3 +23,6 @@ Thumbs.db
 
 # Tài liệu nội bộ (BRD, ảnh thiết kế, plan)
 docs/
+
+# Skill cài cục bộ cho Claude Code (cá nhân, không commit)
+.claude/skills/

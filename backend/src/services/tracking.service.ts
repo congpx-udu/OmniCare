@@ -158,7 +158,7 @@ export async function upsertLog(userId: string, date: string, input: UpsertLogIn
   if (Object.keys($set).length) update.$set = $set
   if (Object.keys($unset).length) update.$unset = $unset
   const doc = await HealthLog.findOneAndUpdate({ user: userId, date: day }, update, {
-    new: true,
+    returnDocument: 'after',
     upsert: true,
     runValidators: true,
   }).lean()

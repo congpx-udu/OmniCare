@@ -9,5 +9,5 @@ export const APP_NAV: ReadonlyArray<{ to: string; label: string; icon: AppNavIco
   { to: ROUTES.CHAT, label: 'Trợ lý AI', icon: 'chat' },
   { to: ROUTES.RECORDS, label: 'Hồ sơ bệnh án', icon: 'scan' },
   { to: ROUTES.TRACKING, label: 'Theo dõi sức khỏe', icon: 'activity' },
-  { to: ROUTES.PROFILE, label: 'Hồ sơ sức khỏe', icon: 'profile' },
+  { to: ROUTES.PROFILE, label: 'Hồ sơ cá nhân', icon: 'profile' },
 ]

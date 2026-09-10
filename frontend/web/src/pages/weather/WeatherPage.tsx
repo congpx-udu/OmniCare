@@ -1,31 +1,41 @@
-import { useCallback, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Alert, MedicalDisclaimer } from '@/components/common'
-import {
-  CurrentWeatherCard,
-  DailyForecast,
-  HourlyStrip,
-  LocationBar,
-  WeatherInsightCard,
-} from '@/components/weather'
-import { ROUTES } from '@/constants'
+import { useCallback, useEffect, useRef } from 'react'
+import { Alert, EmptyState, IconButton, MedicalDisclaimer } from '@/components/common'
+import { DailyForecast, HourlyStrip, WeatherInsightCard } from '@/components/weather'
+import { useLocationBar } from '@/components/weather/useLocationBar'
+import { WeatherHero } from '@/components/weather/WeatherHero'
+import { WeatherMetrics } from '@/components/weather/WeatherMetrics'
+import { useGeolocation } from '@/hooks/useGeolocation'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchWeather, fetchWeatherInsight } from '@/redux/slices/weatherSlice'
 import type { WeatherLocationQuery } from '@/types'
 
-/** Trang Thời tiết & vị trí (AI-02): hiện tại, 24 giờ, 5 ngày. Khối "ảnh hưởng đến bạn" sẽ thêm khi có AI (giai đoạn 3). */
+/**
+ * Trang Thời tiết (bento như Tổng quan): banner nhiệt độ + vị trí, 8 ô chỉ số + 24h + 5 ngày bên trái,
+ * "Ảnh hưởng đến bạn" bên phải cao bằng cột trái. Tự định vị khi mở trang; từ chối thì nhập thành phố.
+ */
 export function WeatherPage() {
   const dispatch = useAppDispatch()
   const { data, query, status, error, insight, insightStatus, insightError } = useAppSelector(
     (s) => s.weather,
   )
+  const geo = useGeolocation()
+  const askedGeo = useRef(false)
 
-  // Có vị trí nhớ từ phiên trước mà chưa có dữ liệu thì tự tải lại
+  const locate = useCallback(() => {
+    geo.request((c) => void dispatch(fetchWeather({ lat: c.lat, lon: c.lng })))
+  }, [geo, dispatch])
+
+  // Chưa có vị trí trong phiên → xin định vị ngay khi mở trang (chỉ một lần)
+  useEffect(() => {
+    if (query || askedGeo.current) return
+    askedGeo.current = true
+    locate()
+  }, [query, locate])
+
   useEffect(() => {
     if (query && !data && status === 'idle') void dispatch(fetchWeather(query))
   }, [dispatch, query, data, status])
 
-  // Có thời tiết rồi thì hỏi AI "ảnh hưởng đến bạn" (backend cache 30 phút)
   useEffect(() => {
     if (data && query && insightStatus === 'idle') void dispatch(fetchWeatherInsight(query))
   }, [dispatch, data, query, insightStatus])
@@ -40,67 +50,83 @@ export function WeatherPage() {
   )
 
   const loading = status === 'loading'
+  const location = useLocationBar({
+    onSelect: select,
+    onLocate: locate,
+    loading,
+    locating: geo.loading,
+    geoError: geo.error,
+    defaultOpen: !query && !geo.loading && Boolean(geo.error),
+    onDark: true,
+  })
+
+  const statusText = geo.loading
+    ? 'Đang xác định vị trí của bạn...'
+    : loading
+      ? 'Đang tải thời tiết...'
+      : geo.error
+        ? 'Không lấy được vị trí tự động, hãy nhập tên thành phố'
+        : 'Chưa có vị trí'
 
   return (
-    <section className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl">Thời tiết & vị trí</h1>
-        <p className="text-neutral-600">
-          Thời tiết tại nơi bạn ở được dùng để gợi ý món ăn và vận động phù hợp. Vị trí chỉ được lấy
-          khi bạn bấm, và chỉ nhớ trong phiên này.
-        </p>
-      </div>
-
-      <LocationBar onSelect={select} loading={loading} currentName={data?.location.name} />
+    <div className="space-y-6">
+      <WeatherHero data={data} statusText={statusText} actions={location.actions} />
+      {location.panel}
 
       {status === 'failed' && error && <Alert variant="error">{error}</Alert>}
 
-      {loading && !data && (
-        <div
-          className="rounded-card h-56 animate-pulse bg-neutral-200"
-          aria-busy
-          aria-label="Đang tải thời tiết"
-        />
+      {(loading || geo.loading) && !data && (
+        <div className="grid gap-4 lg:grid-cols-4" aria-busy aria-label="Đang tải thời tiết">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="rounded-card h-20 animate-pulse bg-neutral-200" />
+          ))}
+        </div>
       )}
 
       {data && (
         <div className={loading ? 'opacity-60 transition' : 'transition'}>
-          <div className="space-y-6">
-            <CurrentWeatherCard data={data} />
-            <WeatherInsightCard
-              insight={insight}
-              status={insightStatus}
-              error={insightError}
-              onRetry={retryInsight}
-            />
-            <HourlyStrip items={data.hourly} timezoneOffset={data.timezoneOffset} />
-            <DailyForecast items={data.daily} />
-            <div className="rounded-card bg-secondary-50 border-secondary/30 flex flex-col gap-3 border p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-secondary-700 text-lg">Ăn gì cho thời tiết này?</h3>
-                <p className="text-sm text-neutral-600">
-                  Trợ lý AI sẽ gợi ý món ăn hợp với {data.location.name} hôm nay và thể trạng của
-                  bạn.
-                </p>
+          <div className="grid gap-6 xl:grid-cols-12">
+            <div className="space-y-6 xl:col-span-8">
+              <WeatherMetrics data={data} />
+              <HourlyStrip items={data.hourly} timezoneOffset={data.timezoneOffset} />
+              <DailyForecast items={data.daily} />
+            </div>
+
+            {/* Ở xl: cột phải cao đúng bằng cột trái, nội dung dư cuộn bên trong thẻ */}
+            <div className="relative xl:col-span-4">
+              <div className="xl:absolute xl:inset-0">
+                <WeatherInsightCard
+                  insight={insight}
+                  status={insightStatus}
+                  error={insightError}
+                  onRetry={retryInsight}
+                  compact
+                />
               </div>
-              <Link
-                to={`${ROUTES.CHAT}?mode=food`}
-                className="bg-secondary hover:bg-secondary-600 font-heading inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition"
-              >
-                Gợi ý món ăn
-              </Link>
             </div>
           </div>
         </div>
       )}
 
-      {!data && status !== 'loading' && (
-        <div className="rounded-card border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
-          Chưa có vị trí. Bấm "Dùng vị trí hiện tại" hoặc nhập tên thành phố phía trên.
-        </div>
+      {!data && !loading && !geo.loading && (
+        <EmptyState
+          icon="pin"
+          title="Chưa có vị trí"
+          hint="Định vị tự động hoặc nhập tên thành phố để xem thời tiết."
+          action={
+            <IconButton
+              icon="target"
+              label="Định vị"
+              variant="primary"
+              size="lg"
+              onClick={locate}
+              tooltipSide="top"
+            />
+          }
+        />
       )}
 
       <MedicalDisclaimer />
-    </section>
+    </div>
   )
 }

@@ -68,6 +68,19 @@ const forecastSchema = z.object({
   }),
 })
 
+/** /data/2.5/air_pollution: AQI thang 1 (tốt) → 5 (rất kém) theo OpenWeather + nồng độ bụi mịn */
+const airSchema = z.object({
+  list: z
+    .array(
+      z.object({
+        main: z.object({ aqi: z.number().int().min(1).max(5) }),
+        components: z.object({ pm2_5: z.number(), pm10: z.number() }),
+        dt: z.number(),
+      }),
+    )
+    .min(1),
+})
+
 const geoItemSchema = z.object({
   name: z.string(),
   local_names: z.record(z.string(), z.string()).optional(),
@@ -119,6 +132,15 @@ export interface WeatherSnapshot {
     pop: number
     humidity: number
   }>
+  /** Chất lượng không khí; null khi OpenWeather không trả được (không chặn thời tiết) */
+  airQuality: {
+    /** 1 tốt · 2 khá · 3 trung bình · 4 kém · 5 rất kém */
+    aqi: 1 | 2 | 3 | 4 | 5
+    label: string
+    pm25: number
+    pm10: number
+    observedAt: string
+  } | null
   /** Lệch múi giờ so với UTC tại vị trí (giây) */
   timezoneOffset: number
   fetchedAt: string
@@ -242,12 +264,44 @@ function buildDaily(
   })
 }
 
+export const AQI_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
+  1: 'Tốt',
+  2: 'Khá',
+  3: 'Trung bình',
+  4: 'Kém',
+  5: 'Rất kém',
+}
+
+async function fetchAirQuality(lat: number, lon: number): Promise<WeatherSnapshot['airQuality']> {
+  try {
+    const air = await owmFetch(
+      '/data/2.5/air_pollution',
+      { lat: String(lat), lon: String(lon) },
+      airSchema,
+    )
+    const now = air.list[0]
+    const aqi = now.main.aqi as 1 | 2 | 3 | 4 | 5
+    return {
+      aqi,
+      label: AQI_LABELS[aqi],
+      pm25: round1(now.components.pm2_5),
+      pm10: round1(now.components.pm10),
+      observedAt: toIso(now.dt),
+    }
+  } catch (err) {
+    // Chất lượng không khí là thông tin phụ; lỗi thì bỏ qua thay vì hỏng cả thời tiết
+    logger.warn({ err }, 'Air quality unavailable')
+    return null
+  }
+}
+
 async function fetchSnapshot(lat: number, lon: number): Promise<WeatherSnapshot> {
   const base = { lat: String(lat), lon: String(lon), units: 'metric', lang: 'vi' }
-  const [current, forecast, place] = await Promise.all([
+  const [current, forecast, place, airQuality] = await Promise.all([
     owmFetch('/data/2.5/weather', base, currentSchema),
     owmFetch('/data/2.5/forecast', base, forecastSchema),
     reverseGeocode(lat, lon),
+    fetchAirQuality(lat, lon),
   ])
   const offset = current.timezone
   return {
@@ -285,6 +339,7 @@ async function fetchSnapshot(lat: number, lon: number): Promise<WeatherSnapshot>
       rainMm: i.rain?.['3h'] ?? null,
     })),
     daily: buildDaily(forecast.list, offset),
+    airQuality,
     timezoneOffset: offset,
     fetchedAt: new Date().toISOString(),
     cached: false,
@@ -328,6 +383,9 @@ export function weatherContext(w: WeatherSnapshot) {
     description: w.current.description,
     wind_kmh: w.current.windKmh,
     rain_chance: w.daily[0]?.pop ?? null,
+    air_quality: w.airQuality
+      ? `${w.airQuality.label} (AQI ${w.airQuality.aqi}/5, PM2.5 ${w.airQuality.pm25} µg/m³)`
+      : null,
   }
 }
 

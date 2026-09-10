@@ -41,7 +41,9 @@ def _normalize_table(raw_table: object) -> dict:
     used: set[str] = set()
     columns: list[dict] = []
     key_by_src: dict[str, str] = {}
-    for c in raw_table.get("columns") or []:
+    cols_in = raw_table.get("columns")
+    rows_in = raw_table.get("rows")
+    for c in cols_in if isinstance(cols_in, list) else []:
         label = _clean_str(c.get("label") if isinstance(c, dict) else c)
         if not label:
             continue
@@ -53,7 +55,7 @@ def _normalize_table(raw_table: object) -> dict:
         if len(columns) >= 8:
             break
     rows: list[dict] = []
-    for r in raw_table.get("rows") or []:
+    for r in rows_in if isinstance(rows_in, list) else []:
         if not isinstance(r, dict):
             continue
         row = {c["key"]: None for c in columns}
