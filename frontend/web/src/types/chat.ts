@@ -5,6 +5,8 @@ export interface MealSuggestion {
   name: string
   why: string
   ingredients: string[]
+  /** Nguyên liệu cần mua thêm ngoài tủ bếp (Tủ bếp mức 1); tin cũ trong lịch sử không có trường này */
+  missing?: string[]
   notes: string | null
 }
 

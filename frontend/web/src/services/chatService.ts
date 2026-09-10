@@ -12,6 +12,8 @@ export interface SendChatPayload {
   message: string
   feeling?: string
   location?: WeatherLocationQuery
+  /** Tủ bếp mức 1: nguyên liệu đang có (chỉ luồng food), không lưu lại */
+  pantry?: string[]
 }
 
 /** Chat gọi LLM mất vài giây; timeout riêng dài hơn mặc định 10s của axiosClient */

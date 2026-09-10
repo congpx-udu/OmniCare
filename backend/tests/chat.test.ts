@@ -18,8 +18,20 @@ describe('chat', () => {
     await request(app)
       .post('/api/chat')
       .set(auth(token))
-      .send({ mode: 'food', message: 'Tối nay ăn gì?' })
+      .send({ mode: 'food', message: 'Tối nay ăn gì?', pantry: ['trứng gà', 'cà chua'] })
       .expect(201)
+
+    // Tủ bếp: quá 30 nguyên liệu hoặc mục rỗng bị từ chối
+    await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'food', message: 'ăn gì', pantry: Array.from({ length: 31 }, () => 'gạo') })
+      .expect(400)
+    await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'food', message: 'ăn gì', pantry: ['  '] })
+      .expect(400)
 
     const symptom = await request(app)
       .get('/api/chat/history?mode=symptom')

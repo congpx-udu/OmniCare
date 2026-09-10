@@ -56,6 +56,25 @@ export const SYMPTOM_CHIPS = [
   'đau lưng',
 ] as const
 
+/** Gợi ý nguyên liệu thường có trong tủ bếp (Tủ bếp mức 1, chỉ là gợi ý nhập liệu) */
+export const PANTRY_SUGGESTIONS = [
+  'trứng gà',
+  'thịt heo',
+  'thịt gà',
+  'cá',
+  'đậu phụ',
+  'cà chua',
+  'rau cải',
+  'hành lá',
+  'tỏi',
+  'gừng',
+  'gạo',
+  'bún',
+  'mì',
+  'khoai tây',
+  'bí đỏ',
+] as const
+
 export const RISK_LABELS: Record<
   RiskLevel,
   { label: string; badge: string; tone: 'info' | 'success' | 'warning' | 'error' }

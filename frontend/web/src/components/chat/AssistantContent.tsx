@@ -91,6 +91,11 @@ export function AssistantContent({ mode, content, meta, onFollowUp }: AssistantC
                   Nguyên liệu: {m.ingredients.join(', ')}
                 </p>
               )}
+              {m.missing && m.missing.length > 0 && (
+                <p className="text-secondary-700 mt-1 text-xs">
+                  Cần mua thêm: {m.missing.join(', ')}
+                </p>
+              )}
               {m.notes && <p className="text-warning mt-1 text-xs">Lưu ý: {m.notes}</p>}
             </div>
           ))}

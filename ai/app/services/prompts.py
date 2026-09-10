@@ -17,7 +17,7 @@ _FOOD_SCHEMA = """Schema JSON:
 {
   "reply": "đoạn văn 2-4 câu tóm tắt gợi ý, thân thiện",
   "meals": [
-    {"name": "tên món", "why": "vì sao hợp thời tiết/thể trạng (1-2 câu)", "ingredients": ["nguyên liệu chính"], "notes": "lưu ý với bệnh nền/dị ứng hoặc null"}
+    {"name": "tên món", "why": "vì sao hợp thời tiết/thể trạng (1-2 câu)", "ingredients": ["nguyên liệu chính"], "missing": ["nguyên liệu cần mua thêm ngoài tủ bếp; rỗng nếu đủ hoặc không có tủ bếp"], "notes": "lưu ý với bệnh nền/dị ứng hoặc null"}
   ],
   "activities": ["1-3 gợi ý vận động ngắn hợp thời tiết, có thể rỗng"],
   "follow_up_questions": ["0-2 câu hỏi ngắn để gợi ý sát hơn"]
@@ -91,6 +91,14 @@ def build_system_prompt(req: ChatRequest) -> str:
         ctx.append(f"Cảm nhận hôm nay: {req.feeling}")
     if req.records_summary:
         ctx.append(f"Tóm tắt bệnh án đã lưu: {req.records_summary}")
+    if req.mode == "food" and req.pantry:
+        ctx.append("Tủ bếp (nguyên liệu đang có): " + ", ".join(req.pantry))
+        ctx.append(
+            "Quy tắc tủ bếp: ưu tiên món nấu được chủ yếu từ nguyên liệu đang có; "
+            "chỉ được thêm gia vị cơ bản và tối đa 1-2 nguyên liệu dễ mua, ghi rõ vào missing của từng món; "
+            "ingredients phải nêu nguyên liệu trong tủ bếp được dùng. "
+            "Nếu tủ bếp có thứ người dùng dị ứng thì không dùng và nhắc trong notes."
+        )
     schema = _FOOD_SCHEMA if req.mode == "food" else _SYMPTOM_SCHEMA
     task = (
         "Nhiệm vụ: gợi ý món ăn (và vận động nhẹ) phù hợp với thời tiết, vị trí và thể trạng."

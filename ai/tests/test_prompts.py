@@ -31,6 +31,16 @@ def test_food_prompt_has_context_and_allergy_rules():
     assert "KHÔNG phải bác sĩ" in p
 
 
+def test_food_prompt_includes_pantry_only_for_food_mode():
+    req = _chat("food").model_copy(update={"pantry": ["trứng gà", "cà chua", "hành lá"]})
+    p = build_system_prompt(req)
+    assert "Tủ bếp (nguyên liệu đang có): trứng gà, cà chua, hành lá" in p
+    assert "missing" in p
+
+    sym = _chat("symptom").model_copy(update={"pantry": ["trứng gà"]})
+    assert "Tủ bếp" not in build_system_prompt(sym)
+
+
 def test_symptom_prompt_has_risk_levels_and_emergency_rule():
     p = build_system_prompt(_chat("symptom"))
     for level in ("emergency", "doctor", "home", "none"):

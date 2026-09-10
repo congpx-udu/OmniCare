@@ -19,6 +19,7 @@ const mealSchema = z.object({
   name: z.string(),
   why: z.string(),
   ingredients: z.array(z.string()).default([]),
+  missing: z.array(z.string()).default([]),
   notes: z.string().nullable().default(null),
 })
 
@@ -139,6 +140,8 @@ export async function sendMessage(userId: string, input: SendChatInput) {
   ])
 
   const history = recent.reverse().map((m) => ({ role: m.role, content: m.content }))
+  // Tủ bếp chỉ có ý nghĩa với luồng food; bỏ trùng, giữ nguyên thứ tự nhập
+  const pantry = input.mode === 'food' ? [...new Set(input.pantry ?? [])] : []
 
   const aiPayload = {
     mode: input.mode,
@@ -157,6 +160,7 @@ export async function sendMessage(userId: string, input: SendChatInput) {
     ...localTime(weather),
     // Tóm tắt bệnh án đã xác nhận (AI-03): chỉ ngày, chẩn đoán, tên thuốc
     records_summary: recordsSummary,
+    pantry,
   }
 
   const ai = await callAi(aiPayload)
@@ -182,6 +186,7 @@ export async function sendMessage(userId: string, input: SendChatInput) {
       context: {
         feeling: input.feeling ?? null,
         weather: weather ? weatherContext(weather) : null,
+        pantry: pantry.length ? pantry : null,
       },
     },
     { user: userId, mode: input.mode, role: 'assistant', content: ai.reply, meta },

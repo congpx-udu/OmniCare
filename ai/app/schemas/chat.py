@@ -46,12 +46,16 @@ class ChatRequest(BaseModel):
     time_of_day: str | None = Field(default=None, max_length=20)
     # Tóm tắt bệnh án đã lưu (Giai đoạn 4), để trống nếu chưa có
     records_summary: str | None = Field(default=None, max_length=2000)
+    # Tủ bếp mức 1: nguyên liệu người dùng đang có (chỉ luồng food, không lưu)
+    pantry: list[str] = Field(default_factory=list, max_length=30)
 
 
 class MealSuggestion(BaseModel):
     name: str
     why: str
     ingredients: list[str] = Field(default_factory=list)
+    # Nguyên liệu cần mua thêm ngoài tủ bếp (rỗng nếu đủ hoặc không có tủ bếp)
+    missing: list[str] = Field(default_factory=list)
     notes: str | None = None
 
 

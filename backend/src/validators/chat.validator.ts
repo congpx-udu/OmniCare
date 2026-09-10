@@ -16,6 +16,11 @@ export const sendChatSchema = z.object({
     feeling: z.string().trim().max(300).optional(),
     /** Vị trí để lấy thời tiết; không gửi thì AI không có ngữ cảnh thời tiết */
     location: locationSchema.optional(),
+    /** Tủ bếp mức 1: nguyên liệu đang có (chỉ luồng food), không lưu riêng */
+    pantry: z
+      .array(z.string().trim().min(1).max(40, 'Mỗi nguyên liệu tối đa 40 ký tự'))
+      .max(30, 'Tối đa 30 nguyên liệu')
+      .optional(),
   }),
 })
 

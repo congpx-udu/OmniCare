@@ -65,12 +65,13 @@ export function ChatPage() {
   }
 
   const send = useCallback(
-    (text: string, feeling?: string) => {
+    (text: string, extra: { feeling?: string; pantry?: string[] }) => {
       void dispatch(
         sendChat({
           mode,
           message: text,
-          feeling,
+          feeling: extra.feeling,
+          pantry: extra.pantry,
           location: weather.query ?? undefined,
         }),
       )
