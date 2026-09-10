@@ -1,6 +1,13 @@
 import { useCallback, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Alert, MedicalDisclaimer } from '@/components/common'
+import { Link, useNavigate } from 'react-router-dom'
+import {
+  Alert,
+  EmptyState,
+  IconButton,
+  MedicalDisclaimer,
+  PageHeader,
+  SectionCard,
+} from '@/components/common'
 import { ShortcutCard, SleepBarsCard, StatCard, WeightTrendCard } from '@/components/dashboard'
 import { RecordCard } from '@/components/records'
 import { CurrentWeatherCard, WeatherInsightCard } from '@/components/weather'
@@ -16,27 +23,27 @@ import type { NavIconName } from '@/components/layout/NavIcon'
 const SHORTCUTS: ReadonlyArray<{ to: string; icon: NavIconName; title: string; desc: string }> = [
   {
     to: `${ROUTES.CHAT}?mode=symptom`,
-    icon: 'chat',
-    title: 'Trợ lý sức khỏe AI',
-    desc: 'Mô tả triệu chứng để nhận dự đoán, cảnh báo và gợi ý chuyên khoa.',
+    icon: 'stethoscope',
+    title: 'Hỏi trợ lý AI',
+    desc: 'Mô tả triệu chứng để nhận đánh giá sơ bộ và gợi ý chuyên khoa',
   },
   {
     to: `${ROUTES.CHAT}?mode=food`,
     icon: 'food',
-    title: 'Gợi ý món ăn hôm nay',
-    desc: 'Thực đơn phù hợp thời tiết, giờ giấc và tình trạng sức khỏe.',
+    title: 'Gợi ý món ăn',
+    desc: 'Thực đơn hợp thời tiết, giờ giấc và thể trạng',
   },
   {
     to: ROUTES.WEATHER,
     icon: 'weather',
-    title: 'Dự báo thời tiết',
-    desc: 'Theo dõi thời tiết và khuyến nghị sức khỏe theo ngày.',
+    title: 'Thời tiết',
+    desc: 'Dự báo và khuyến nghị sức khỏe theo ngày',
   },
   {
     to: ROUTES.RECORDS,
     icon: 'scan',
-    title: 'Hồ sơ bệnh án',
-    desc: 'Tải lên ảnh bệnh án, đơn thuốc và lưu trữ an toàn.',
+    title: 'Bệnh án',
+    desc: 'Tải ảnh đơn thuốc, phiếu khám để AI đọc và lưu trữ',
   },
 ]
 
@@ -49,10 +56,19 @@ const AQI_TONE: Record<number, string> = {
   5: 'text-danger',
 }
 
+const todayLabel = () =>
+  new Date().toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
 /** Trang Tổng quan: chỉ số nhanh, biểu đồ 7 ngày, thời tiết + ảnh hưởng, bệnh án, nhật ký, lối tắt */
 export function DashboardPage() {
   const { user } = useAuth()
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const { profile, status } = useAppSelector((s) => s.profile)
   const weather = useAppSelector((s) => s.weather)
   const records = useAppSelector((s) => s.records)
@@ -102,20 +118,23 @@ export function DashboardPage() {
   const latestAdvice = tracking.advice[0] ?? null
   const latestRecord = records.items[0] ?? null
   const needsProfile = profile !== null && !profile.isComplete
+  const doneCount = latestAdvice?.suggestions.filter((s) => s.done).length ?? 0
+  const nextSuggestion = latestAdvice?.suggestions.find((s) => !s.done) ?? null
 
   return (
     <section className="space-y-6">
-      <h1 className="font-mono text-2xl font-semibold tracking-[0.12em] uppercase sm:text-3xl">
-        Xin chào, {user?.fullName ?? 'bạn'}
-      </h1>
+      <PageHeader
+        icon="home"
+        title={`Xin chào, ${user?.fullName ?? 'bạn'}`}
+        subtitle={todayLabel()}
+      />
 
       {needsProfile && (
         <Alert variant="warning">
-          Hồ sơ cá nhân của bạn chưa có chiều cao và ngày sinh.{' '}
+          Hồ sơ cá nhân chưa có chiều cao và ngày sinh.{' '}
           <Link to={ROUTES.PROFILE} className="font-semibold underline">
             Hoàn thiện ngay
-          </Link>{' '}
-          để trợ lý AI đưa ra gợi ý sát với thể trạng của bạn.
+          </Link>
         </Alert>
       )}
 
@@ -137,7 +156,7 @@ export function DashboardPage() {
           to={ROUTES.TRACKING}
         />
         <StatCard
-          label="Chất lượng không khí"
+          label="Không khí"
           icon="wind"
           value={air ? air.label : '—'}
           sub={air ? `AQI ${air.aqi}/5 · PM2.5 ${air.pm25}` : 'Chọn vị trí'}
@@ -170,71 +189,89 @@ export function DashboardPage() {
           />
         </>
       ) : (
-        <Link
-          to={ROUTES.WEATHER}
-          className="card-3d rounded-card bg-surface-cream hover:border-primary-200 flex items-center justify-between border border-neutral-200/80 p-5"
+        <SectionCard
+          tone="cream"
+          lift
+          icon="pin"
+          title={
+            weather.status === 'loading' ? 'Đang tải thời tiết...' : 'Chọn vị trí để xem thời tiết'
+          }
+          actions={
+            <IconButton
+              icon="arrow-right"
+              label="Mở trang Thời tiết"
+              onClick={() => navigate(ROUTES.WEATHER)}
+            />
+          }
+          className="cursor-pointer"
+          onClick={() => navigate(ROUTES.WEATHER)}
         >
-          <div>
-            <h3 className="text-lg">Thời tiết & ảnh hưởng đến bạn</h3>
-            <p className="mt-1 text-sm text-neutral-600">
-              {weather.status === 'loading'
-                ? 'Đang tải thời tiết...'
-                : 'Chọn vị trí để xem thời tiết, chất lượng không khí và lưu ý sức khỏe hôm nay.'}
-            </p>
-          </div>
-          <span className="text-secondary shrink-0 text-sm font-semibold">Chọn vị trí →</span>
-        </Link>
+          <p className="text-sm text-neutral-600">
+            Thời tiết, chất lượng không khí và lưu ý sức khỏe hôm nay.
+          </p>
+        </SectionCard>
       )}
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg">Bệnh án gần nhất</h2>
-          <Link
-            to={ROUTES.RECORDS}
-            className="text-secondary text-sm font-semibold hover:underline"
-          >
-            Xem tất cả
-          </Link>
-        </div>
+      <SectionCard
+        icon="clipboard"
+        title="Bệnh án gần nhất"
+        actions={
+          <IconButton
+            icon="arrow-right"
+            label="Xem tất cả bệnh án"
+            variant="ghost"
+            onClick={() => navigate(ROUTES.RECORDS)}
+          />
+        }
+      >
         {latestRecord ? (
           <RecordCard record={latestRecord} />
         ) : (
-          <Link
-            to={ROUTES.RECORDS}
-            className="card-3d rounded-card bg-surface hover:border-primary-200 flex items-center justify-between gap-3 border border-neutral-200 p-4"
-          >
-            <p className="text-sm text-neutral-600">
-              {records.listStatus === 'loading'
-                ? 'Đang tải bệnh án...'
-                : 'Chưa có bệnh án nào. Tải ảnh đơn thuốc hoặc phiếu khám để AI đọc và lưu trữ.'}
-            </p>
-            <span className="text-secondary shrink-0 text-sm font-semibold">Tải lên →</span>
-          </Link>
+          <EmptyState
+            icon="upload"
+            title={records.listStatus === 'loading' ? 'Đang tải bệnh án...' : 'Chưa có bệnh án'}
+            hint="Tải ảnh đơn thuốc hoặc phiếu khám để AI đọc và lưu trữ."
+            action={
+              <IconButton
+                icon="upload"
+                label="Tải bệnh án"
+                variant="primary"
+                size="lg"
+                onClick={() => navigate(ROUTES.RECORDS)}
+              />
+            }
+          />
         )}
-      </div>
+      </SectionCard>
 
       {latestAdvice && (
-        <Link
-          to={ROUTES.TRACKING}
-          className="card-3d rounded-card bg-surface hover:border-primary-200 block border border-neutral-200 p-5"
+        <SectionCard
+          icon="activity"
+          title="Nhật ký sức khỏe"
+          actions={
+            <>
+              <span className="bg-secondary-50 text-secondary-700 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap">
+                {doneCount}/{latestAdvice.suggestions.length} đề xuất đã làm
+              </span>
+              <IconButton
+                icon="arrow-right"
+                label="Xem theo dõi sức khỏe"
+                variant="ghost"
+                onClick={() => navigate(ROUTES.TRACKING)}
+              />
+            </>
+          }
         >
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-lg">Nhật ký sức khỏe</h3>
-            <span className="bg-secondary-50 text-secondary-700 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-              {latestAdvice.suggestions.filter((s) => s.done).length}/
-              {latestAdvice.suggestions.length} đề xuất đã làm
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-neutral-700">{latestAdvice.summary}</p>
-          {latestAdvice.suggestions.find((s) => !s.done) && (
-            <p className="text-primary mt-2 text-sm font-semibold">
-              Tiếp theo: {latestAdvice.suggestions.find((s) => !s.done)!.title}
+          <p className="line-clamp-2 text-sm text-neutral-700">{latestAdvice.summary}</p>
+          {nextSuggestion && (
+            <p className="text-primary mt-2 truncate text-sm font-semibold">
+              Tiếp theo: {nextSuggestion.title}
             </p>
           )}
-        </Link>
+        </SectionCard>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {SHORTCUTS.map((s) => (
           <ShortcutCard key={s.to} {...s} />
         ))}

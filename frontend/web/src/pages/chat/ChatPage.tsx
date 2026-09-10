@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AssistantAvatar, ChatInput, MessageBubble } from '@/components/chat'
 import type { ChatSendExtra } from '@/components/chat/ChatInput'
-import { Alert, MedicalDisclaimer } from '@/components/common'
+import { Alert, IconButton, MedicalDisclaimer } from '@/components/common'
+import { NavIcon } from '@/components/layout'
 import { CHAT_GREETING, CHAT_MODES, EMERGENCY_HOTLINE } from '@/constants'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { clearChatError, clearThread, fetchHistory, sendChat } from '@/redux/slices/chatSlice'
@@ -91,15 +92,7 @@ export function ChatPage() {
           <h1 className="text-xl sm:text-2xl">{config.title}</h1>
           <p className="truncate text-sm text-neutral-500">{config.description}</p>
         </div>
-        {!empty && (
-          <button
-            type="button"
-            onClick={clear}
-            className="text-danger shrink-0 text-xs hover:underline"
-          >
-            Xóa lịch sử
-          </button>
-        )}
+        {!empty && <IconButton icon="trash" label="Xóa lịch sử" variant="danger" onClick={clear} />}
       </header>
 
       <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto py-4" aria-live="polite">
@@ -158,8 +151,12 @@ export function ChatPage() {
                 key={s}
                 type="button"
                 onClick={() => applyStarter(s)}
-                className="bg-surface hover:border-secondary hover:text-secondary rounded-full border border-neutral-200 px-3.5 py-1.5 text-sm text-neutral-700 shadow-sm transition"
+                className="bg-surface hover:border-secondary hover:text-secondary inline-flex cursor-pointer items-center gap-2 rounded-full border border-neutral-200 px-3.5 py-2 text-sm text-neutral-700 shadow-sm transition"
               >
+                <NavIcon
+                  name={/ăn|món/i.test(s) ? 'food' : 'stethoscope'}
+                  className="text-secondary size-4 shrink-0"
+                />
                 {s}
               </button>
             ))}
@@ -175,9 +172,10 @@ export function ChatPage() {
           onSend={send}
         />
 
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-xs text-neutral-500">
-          <span>Chỉ mang tính tham khảo. Gọi {EMERGENCY_HOTLINE} khi khẩn cấp.</span>
-        </div>
+        <p className="flex items-center justify-center gap-1.5 text-center text-xs text-neutral-500">
+          <NavIcon name="info" className="size-3.5 shrink-0" />
+          Chỉ mang tính tham khảo. Gọi {EMERGENCY_HOTLINE} khi khẩn cấp.
+        </p>
         <MedicalDisclaimer />
       </div>
     </section>

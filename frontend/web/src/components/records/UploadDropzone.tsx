@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
-import { Button } from '@/components/common'
+import { Button, IconButton } from '@/components/common'
+import { NavIcon } from '@/components/layout'
 import { RECORD_IMAGE_MAX_MB, RECORD_IMAGE_TYPES, RECORD_MAX_PAGES } from '@/constants'
 import { cn } from '@/utils'
 
@@ -76,140 +77,135 @@ export function UploadDropzone({ uploading = false, onUpload }: UploadDropzonePr
     if (pages.length) onUpload(pages.map((p) => p.file))
   }
 
-  const dropArea = (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault()
-        setDragging(true)
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={onDrop}
-      className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-4 text-center transition',
-        pages.length ? 'py-5' : 'py-10',
-        dragging ? 'border-secondary bg-secondary-50' : 'border-neutral-300',
-      )}
-    >
-      {!pages.length && (
-        <>
-          <svg
-            viewBox="0 0 24 24"
-            className="text-secondary size-10"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            aria-hidden
-          >
-            <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 4v12m0-12-4 4m4-4 4 4" />
-          </svg>
-          <div>
-            <p className="font-heading text-primary font-semibold">
-              Kéo thả ảnh đơn thuốc, bệnh án vào đây
-            </p>
-            <p className="text-sm text-neutral-500">
-              Chọn nhiều ảnh nếu hồ sơ có nhiều trang, AI sẽ đọc và gộp thành một kết quả. JPEG,
-              PNG, WEBP tối đa {RECORD_IMAGE_MAX_MB} MB/ảnh, {RECORD_MAX_PAGES} trang.
-            </p>
-          </div>
-        </>
-      )}
-      <label
-        htmlFor={inputId}
+  return (
+    <div className="rounded-card bg-surface space-y-4 border border-neutral-200 p-4 shadow-sm sm:p-5">
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragging(true)
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
         className={cn(
-          'font-heading cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold transition',
-          pages.length
-            ? 'text-primary hover:bg-primary-50 border border-neutral-300'
-            : 'bg-primary hover:bg-primary-600 text-white',
+          'rounded-card flex flex-col items-center justify-center gap-3 border-2 border-dashed px-4 text-center transition',
+          pages.length ? 'py-5' : 'py-10',
+          dragging ? 'border-secondary bg-secondary-50' : 'border-neutral-300',
         )}
       >
-        {pages.length ? '+ Thêm trang' : 'Chọn ảnh'}
-      </label>
-      <input
-        ref={inputRef}
-        id={inputId}
-        type="file"
-        multiple
-        accept={RECORD_IMAGE_TYPES.join(',')}
-        capture="environment"
-        onChange={onChange}
-        disabled={uploading}
-        className="sr-only"
-      />
-    </div>
-  )
+        {!pages.length && (
+          <>
+            <span className="bg-secondary-50 text-secondary flex size-16 items-center justify-center rounded-full">
+              <NavIcon name="upload" className="size-8" />
+            </span>
+            <p className="font-heading text-primary font-semibold">
+              Kéo thả ảnh đơn thuốc, phiếu khám vào đây
+            </p>
+            <p className="text-xs text-neutral-500">
+              JPEG, PNG, WEBP · ≤ {RECORD_IMAGE_MAX_MB} MB/ảnh · tối đa {RECORD_MAX_PAGES} trang
+            </p>
+          </>
+        )}
+        <label
+          htmlFor={inputId}
+          className={cn(
+            'font-heading inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition',
+            'focus-within:ring-tertiary focus-within:ring-2 focus-within:ring-offset-2',
+            pages.length
+              ? 'text-primary hover:bg-primary-50 border border-neutral-300'
+              : 'bg-primary hover:bg-primary-600 text-white',
+          )}
+        >
+          <NavIcon name={pages.length ? 'plus' : 'image'} className="size-4" />
+          {pages.length ? 'Thêm trang' : 'Chọn ảnh'}
+        </label>
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="file"
+          multiple
+          accept={RECORD_IMAGE_TYPES.join(',')}
+          capture="environment"
+          onChange={onChange}
+          disabled={uploading}
+          className="sr-only"
+        />
+      </div>
 
-  return (
-    <div className="rounded-card bg-surface space-y-4 border border-neutral-200 p-4 sm:p-5">
       {pages.length > 0 && (
         <ol className="flex flex-wrap gap-3">
           {pages.map((p, i) => (
             <li
               key={p.preview}
-              className="relative w-32 rounded-lg border border-neutral-200 p-1.5 text-center"
+              className="bg-surface relative w-32 rounded-xl border border-neutral-200 p-1.5 shadow-sm"
             >
               <img
                 src={p.preview}
                 alt={`Trang ${i + 1}`}
-                className="h-36 w-full rounded object-cover"
+                className="h-36 w-full rounded-lg object-cover"
               />
-              <p className="mt-1 truncate text-[11px] text-neutral-500" title={p.file.name}>
-                Trang {i + 1} · {(p.file.size / 1024 / 1024).toFixed(1)} MB
-              </p>
-              <div className="mt-1 flex justify-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => move(i, -1)}
-                  disabled={i === 0 || uploading}
-                  aria-label="Chuyển lên trước"
-                  className="rounded px-1.5 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-30"
-                >
-                  ←
-                </button>
-                <button
-                  type="button"
-                  onClick={() => move(i, 1)}
-                  disabled={i === pages.length - 1 || uploading}
-                  aria-label="Chuyển ra sau"
-                  className="rounded px-1.5 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-30"
-                >
-                  →
-                </button>
-                <button
-                  type="button"
+              <span className="bg-primary/85 absolute top-2.5 left-2.5 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white">
+                {i + 1}
+              </span>
+              <div className="absolute top-2.5 right-2.5">
+                <IconButton
+                  icon="close"
+                  label={`Bỏ trang ${i + 1}`}
+                  size="sm"
+                  variant="danger"
+                  tooltipSide="left"
                   onClick={() => removeAt(i)}
                   disabled={uploading}
-                  aria-label={`Bỏ trang ${i + 1}`}
-                  className="text-danger rounded px-1.5 text-xs hover:bg-neutral-100 disabled:opacity-30"
-                >
-                  ✕
-                </button>
+                  className="bg-surface/90"
+                />
+              </div>
+              <div className="mt-1.5 flex items-center justify-between">
+                <IconButton
+                  icon="chevron-left"
+                  label="Chuyển lên trước"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0 || uploading}
+                />
+                <span className="truncate text-[11px] text-neutral-500" title={p.file.name}>
+                  {(p.file.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+                <IconButton
+                  icon="chevron-right"
+                  label="Chuyển ra sau"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => move(i, 1)}
+                  disabled={i === pages.length - 1 || uploading}
+                />
               </div>
             </li>
           ))}
         </ol>
       )}
 
-      {dropArea}
-
       {pages.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={submit} loading={uploading}>
-              Đọc {pages.length > 1 ? `${pages.length} trang` : ''} bằng AI
-            </Button>
-            <Button variant="ghost" onClick={reset} disabled={uploading}>
-              Bỏ hết
-            </Button>
-          </div>
-          {uploading && (
-            <p className="text-xs text-neutral-500">
-              Đang đọc {pages.length} trang, thường mất 5–30 giây. Ảnh không được gửi cho bên thứ ba
-              ngoài dịch vụ AI đã cấu hình.
-            </p>
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={submit} loading={uploading}>
+            <NavIcon name="sparkles" className="size-4" />
+            Đọc bằng AI{pages.length > 1 ? ` (${pages.length} trang)` : ''}
+          </Button>
+          <IconButton
+            icon="trash"
+            label="Bỏ hết ảnh"
+            variant="ghost"
+            onClick={reset}
+            disabled={uploading}
+          />
+          {uploading && <span className="text-xs text-neutral-500">Thường mất 5–30 giây...</span>}
         </div>
       )}
-      {error && <p className="text-danger text-xs">{error}</p>}
+      {error && (
+        <p className="text-danger flex items-start gap-1.5 text-xs" role="alert">
+          <NavIcon name="alert" className="mt-0.5 size-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   )
 }

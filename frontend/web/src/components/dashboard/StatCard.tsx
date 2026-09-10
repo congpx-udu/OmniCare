@@ -7,34 +7,39 @@ interface StatCardProps {
   icon: NavIconName
   value: string
   unit?: string
-  /** Dòng phụ nhỏ cạnh giá trị (ví dụ "AQI 48", "Bình thường") */
+  /** Dòng phụ nhỏ dưới giá trị (ví dụ "AQI 4/5", "Bình thường") */
   sub?: string
   tone?: string
   to: string
 }
 
-/** Thẻ chỉ số nhanh trên Dashboard: nhãn mono viết hoa, giá trị lớn, icon góc phải */
+/** Thẻ chỉ số nhanh: icon lớn trong ô teal, nhãn ngắn, số to. Cả thẻ là link sang trang chi tiết. */
 export function StatCard({ label, icon, value, unit, sub, tone, to }: StatCardProps) {
   return (
     <Link
       to={to}
-      className="card-3d rounded-card bg-surface-cream hover:border-primary-200 block border border-neutral-200/80 p-5"
+      className="card-3d rounded-card bg-surface-cream hover:border-primary-200 flex w-full items-center gap-4 border border-neutral-200/80 p-4 sm:p-5"
     >
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[11px] font-medium tracking-[0.18em] text-neutral-500 uppercase">
+      <span className="bg-secondary-50 text-secondary flex size-12 shrink-0 items-center justify-center rounded-2xl">
+        <NavIcon name={icon} className="size-6" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-semibold tracking-wide text-neutral-500 uppercase">
           {label}
         </span>
-        <NavIcon name={icon} className="text-secondary size-4" />
-      </div>
-      <p className="mt-6 flex flex-wrap items-baseline gap-x-1.5">
-        <span
-          className={cn('font-heading text-primary text-3xl font-bold whitespace-nowrap', tone)}
-        >
-          {value}
+        <span className="flex flex-wrap items-baseline gap-x-1.5">
+          <span
+            className={cn(
+              'font-heading text-primary text-2xl font-bold whitespace-nowrap sm:text-3xl',
+              tone,
+            )}
+          >
+            {value}
+          </span>
+          {unit && <span className="text-sm text-neutral-500">{unit}</span>}
         </span>
-        {unit && <span className="text-sm text-neutral-500">{unit}</span>}
-        {sub && <span className="text-xs whitespace-nowrap text-neutral-500">{sub}</span>}
-      </p>
+        {sub && <span className="block truncate text-xs text-neutral-500">{sub}</span>}
+      </span>
     </Link>
   )
 }

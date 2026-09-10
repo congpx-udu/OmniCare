@@ -130,6 +130,19 @@
   }
   body {
     @apply bg-background font-sans text-neutral-900;
+    /* Nền có ánh teal/sky rất nhẹ phía trên để trang mềm hơn nền phẳng */
+    background-image:
+      radial-gradient(
+        60rem 30rem at 15% -10%,
+        color-mix(in srgb, var(--color-secondary) 10%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        50rem 26rem at 95% 0%,
+        color-mix(in srgb, var(--color-tertiary) 8%, transparent),
+        transparent 70%
+      );
+    background-attachment: fixed;
   }
   h1,
   h2,

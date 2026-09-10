@@ -1,3 +1,5 @@
+import { IconButton } from '@/components/common'
+import { NavIcon } from '@/components/layout'
 import type { MedicationTable as MedicationTableData } from '@/types'
 
 interface MedicationTableProps {
@@ -7,7 +9,7 @@ interface MedicationTableProps {
 }
 
 const cell =
-  'bg-surface focus:border-tertiary w-full rounded-md border border-neutral-200 px-2.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none disabled:bg-neutral-50'
+  'bg-surface focus:border-tertiary focus:ring-tertiary/30 w-full rounded-lg border border-neutral-200 px-2.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:outline-none disabled:bg-neutral-50'
 
 function slug(label: string, used: Set<string>) {
   const base =
@@ -25,7 +27,7 @@ function slug(label: string, used: Set<string>) {
 
 /**
  * Bảng thuốc sinh động theo cột mà AI đọc được từ tài liệu (mỗi bệnh viện in khác nhau).
- * Người dùng sửa từng ô, thêm/xóa dòng, thêm/xóa cột.
+ * Người dùng sửa từng ô, thêm/xóa dòng, thêm/xóa cột bằng nút icon.
  */
 export function MedicationTable({ value, onChange, disabled }: MedicationTableProps) {
   const { columns, rows } = value
@@ -62,22 +64,18 @@ export function MedicationTable({ value, onChange, disabled }: MedicationTablePr
 
   if (columns.length === 0) {
     return (
-      <div className="rounded-card border border-dashed border-neutral-300 p-4 text-sm text-neutral-500">
-        Tài liệu này không có bảng thuốc.{' '}
-        <button
-          type="button"
-          onClick={addColumn}
-          disabled={disabled}
-          className="text-secondary font-semibold hover:underline"
-        >
-          Tạo bảng
-        </button>
+      <div className="rounded-card flex items-center justify-between gap-3 border border-dashed border-neutral-300 p-4 text-sm text-neutral-500">
+        <span className="inline-flex items-center gap-2">
+          <NavIcon name="pill" className="size-4" />
+          Tài liệu không có bảng thuốc
+        </span>
+        <IconButton icon="plus" label="Tạo bảng thuốc" onClick={addColumn} disabled={disabled} />
       </div>
     )
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="rounded-card bg-surface overflow-x-auto border border-neutral-200">
         <table
           className="w-full border-collapse text-left"
@@ -86,26 +84,30 @@ export function MedicationTable({ value, onChange, disabled }: MedicationTablePr
           <thead className="bg-surface-muted">
             <tr>
               <th className="w-10 px-3 py-2 text-center text-xs font-semibold text-neutral-500">
-                STT
+                #
               </th>
               {columns.map((c) => (
-                <th key={c.key} className="group px-2 py-2 text-xs font-semibold text-neutral-600">
+                <th
+                  key={c.key}
+                  className="group px-2 py-1.5 text-xs font-semibold text-neutral-600"
+                >
                   <span className="inline-flex items-center gap-1">
                     {c.label}
-                    <button
-                      type="button"
-                      onClick={() => removeColumn(c.key)}
-                      disabled={disabled}
-                      aria-label={`Xóa cột ${c.label}`}
-                      title="Xóa cột"
-                      className="text-neutral-400 opacity-0 transition group-hover:opacity-100 hover:text-red-600 disabled:hidden"
-                    >
-                      ✕
-                    </button>
+                    <span className="opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+                      <IconButton
+                        icon="close"
+                        label={`Xóa cột ${c.label}`}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeColumn(c.key)}
+                        disabled={disabled}
+                        className="size-7"
+                      />
+                    </span>
                   </span>
                 </th>
               ))}
-              <th className="w-10" />
+              <th className="w-12" />
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
@@ -124,15 +126,16 @@ export function MedicationTable({ value, onChange, disabled }: MedicationTablePr
                   </td>
                 ))}
                 <td className="px-2 py-1.5 text-center">
-                  <button
-                    type="button"
+                  <IconButton
+                    icon="trash"
+                    label={`Xóa dòng ${ri + 1}`}
+                    size="sm"
+                    variant="ghost"
+                    tooltipSide="left"
                     onClick={() => removeRow(ri)}
                     disabled={disabled}
-                    aria-label={`Xóa dòng ${ri + 1}`}
-                    className="text-danger rounded p-1 text-sm hover:bg-neutral-100 disabled:opacity-40"
-                  >
-                    ✕
-                  </button>
+                    className="hover:text-danger hover:bg-danger/10"
+                  />
                 </td>
               </tr>
             ))}
@@ -142,34 +145,24 @@ export function MedicationTable({ value, onChange, disabled }: MedicationTablePr
                   colSpan={columns.length + 2}
                   className="px-3 py-4 text-center text-xs text-neutral-500"
                 >
-                  Chưa có dòng nào.
+                  Chưa có dòng nào
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap gap-4">
-        <button
-          type="button"
-          onClick={addRow}
-          disabled={disabled}
-          className="text-secondary text-sm font-semibold hover:underline disabled:opacity-50"
-        >
-          + Thêm dòng
-        </button>
-        <button
-          type="button"
+      <div className="flex flex-wrap items-center gap-2">
+        <IconButton icon="plus" label="Thêm dòng thuốc" onClick={addRow} disabled={disabled} />
+        <IconButton
+          icon="sidebar"
+          label="Thêm cột"
+          variant="outline"
           onClick={addColumn}
           disabled={disabled}
-          className="text-secondary text-sm font-semibold hover:underline disabled:opacity-50"
-        >
-          + Thêm cột
-        </button>
+        />
+        <span className="text-xs text-neutral-500">Cột giữ đúng như trên tài liệu gốc</span>
       </div>
-      <p className="text-xs text-neutral-500">
-        Các cột được giữ đúng như trên tài liệu gốc. Rê chuột lên tên cột để xóa cột.
-      </p>
     </div>
   )
 }

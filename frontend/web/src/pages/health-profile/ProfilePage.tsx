@@ -1,13 +1,15 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { Alert, Button, Input, MedicalDisclaimer } from '@/components/common'
-import { ProfileSummary, TagInput } from '@/components/health-profile'
+import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import {
-  ALLERGY_SUGGESTIONS,
-  CHRONIC_CONDITION_SUGGESTIONS,
-  GENDER_OPTIONS,
-  ROUTES,
-} from '@/constants'
+  Alert,
+  IconButton,
+  Input,
+  MedicalDisclaimer,
+  PageHeader,
+  SectionCard,
+} from '@/components/common'
+import { ProfileSummary, TagInput } from '@/components/health-profile'
+import { NavIcon, type NavIconName } from '@/components/layout'
+import { ALLERGY_SUGGESTIONS, CHRONIC_CONDITION_SUGGESTIONS, GENDER_OPTIONS } from '@/constants'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { updateUser } from '@/redux/slices/authSlice'
 import { fetchProfile, resetSaveStatus, saveProfile } from '@/redux/slices/profileSlice'
@@ -48,11 +50,31 @@ function toFormState(p: HealthProfile): FormState {
   }
 }
 
-const SECTION = 'rounded-card bg-surface space-y-5 border border-neutral-200 p-5 sm:p-6'
+const FORM_ID = 'profile-form'
+
+/** Ô nhập có icon bên trái */
+function IconField({ icon, children }: { icon: NavIconName; children: ReactNode }) {
+  return (
+    <div className="relative">
+      <NavIcon
+        name={icon}
+        className="text-secondary pointer-events-none absolute top-[2.35rem] left-3.5 z-10 size-4"
+      />
+      {children}
+    </div>
+  )
+}
+
+/** Icon giới tính: dùng NavIcon 'gender' chung, khác nhau ở nhãn/tooltip */
+const GENDER_ICON: Record<Gender, NavIconName> = {
+  male: 'gender',
+  female: 'gender',
+  other: 'user',
+}
 
 /**
- * Hồ sơ cá nhân: thông tin tài khoản + thể trạng nền (chiều cao, ngày sinh, giới tính, bệnh nền, dị ứng).
- * Cân nặng và các chỉ số biến động ghi ở trang Theo dõi sức khỏe, không nhập ở đây.
+ * Hồ sơ cá nhân: tài khoản + thể trạng nền (ngày sinh, chiều cao, giới tính, bệnh nền, dị ứng).
+ * Cân nặng và chỉ số biến động ghi ở Theo dõi sức khỏe.
  */
 export function ProfilePage() {
   const dispatch = useAppDispatch()
@@ -94,93 +116,139 @@ export function ProfilePage() {
   }
 
   const loading = status === 'loading' && !profile
+  const dirty = form !== null
+  const inputClass = 'pl-10'
 
   return (
-    <section className="mx-auto max-w-3xl space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl">Hồ sơ cá nhân</h1>
-        <p className="text-neutral-600">
-          Thông tin tài khoản và thể trạng nền để trợ lý AI cá nhân hóa gợi ý. Cân nặng, huyết áp,
-          giấc ngủ... ghi theo ngày ở{' '}
-          <Link to={ROUTES.TRACKING} className="text-secondary font-semibold hover:underline">
-            Theo dõi sức khỏe
-          </Link>
-          .
-        </p>
-      </div>
+    <section className="mx-auto max-w-3xl space-y-6">
+      <PageHeader
+        icon="profile"
+        title={profile?.fullName || 'Hồ sơ cá nhân'}
+        subtitle={profile?.phone}
+        actions={
+          <>
+            {dirty && (
+              <IconButton
+                icon="close"
+                label="Hủy thay đổi"
+                variant="ghost"
+                onClick={() => {
+                  setForm(null)
+                  setFieldErrors({})
+                }}
+              />
+            )}
+            <IconButton
+              icon="save"
+              label="Lưu hồ sơ"
+              variant="primary"
+              type="submit"
+              form={FORM_ID}
+              loading={saveStatus === 'loading'}
+              disabled={loading || !dirty}
+            />
+          </>
+        }
+      />
 
       {profile && <ProfileSummary profile={profile} />}
 
-      {status === 'failed' && !profile && <Alert variant="error">{error}</Alert>}
+      {status === 'failed' && !profile && (
+        <Alert variant="error">
+          <span className="flex items-center gap-2">
+            <NavIcon name="alert" className="size-4 shrink-0" />
+            {error}
+          </span>
+        </Alert>
+      )}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-6" aria-busy={loading}>
-        <fieldset disabled={loading} className="space-y-6">
-          <div className={SECTION}>
-            <h2 className="text-lg">Thông tin tài khoản</h2>
+      <form
+        id={FORM_ID}
+        onSubmit={handleSubmit}
+        noValidate
+        className="space-y-5"
+        aria-busy={loading}
+      >
+        <fieldset disabled={loading} className="space-y-5">
+          <SectionCard icon="user" title="Tài khoản">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                label="Họ và tên"
-                name="fullName"
-                autoComplete="name"
-                placeholder="Nguyễn Văn A"
-                value={current.fullName}
-                onChange={onChange}
-                error={fieldErrors.fullName}
-              />
-              <Input
-                label="Số điện thoại"
-                name="phone"
-                value={profile?.phone ?? ''}
-                readOnly
-                disabled
-                hint="Dùng để đăng nhập, không đổi được."
-              />
-              <Input
-                label="Email (tùy chọn)"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="ban@example.com"
-                value={current.email}
-                onChange={onChange}
-                error={fieldErrors.email}
-              />
+              <IconField icon="user">
+                <Input
+                  label="Họ và tên"
+                  name="fullName"
+                  autoComplete="name"
+                  placeholder="Nguyễn Văn A"
+                  value={current.fullName}
+                  onChange={onChange}
+                  error={fieldErrors.fullName}
+                  className={inputClass}
+                />
+              </IconField>
+              <IconField icon="phone">
+                <Input
+                  label="Số điện thoại"
+                  name="phone"
+                  value={profile?.phone ?? ''}
+                  readOnly
+                  disabled
+                  hint="Dùng để đăng nhập, không đổi được."
+                  className={inputClass}
+                />
+              </IconField>
+              <IconField icon="mail">
+                <Input
+                  label="Email (tùy chọn)"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="ban@example.com"
+                  value={current.email}
+                  onChange={onChange}
+                  error={fieldErrors.email}
+                  className={inputClass}
+                />
+              </IconField>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className={SECTION}>
-            <h2 className="text-lg">Thể trạng nền</h2>
+          <SectionCard icon="ruler" title="Thể trạng">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                label="Ngày sinh"
-                name="dateOfBirth"
-                type="date"
-                max={new Date().toISOString().slice(0, 10)}
-                value={current.dateOfBirth}
-                onChange={onChange}
-                error={fieldErrors.dateOfBirth}
-              />
-              <Input
-                label="Chiều cao (cm)"
-                name="heightCm"
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min={30}
-                max={250}
-                placeholder="170"
-                value={current.heightCm}
-                onChange={onChange}
-                error={fieldErrors.heightCm}
-                hint={
-                  profile?.weightKg !== null && profile?.weightKg !== undefined
-                    ? `Cân nặng mới nhất ${profile.weightKg} kg (nhật ký ${profile.weightDate ?? 'cũ'}), BMI tính từ đó.`
-                    : 'Ghi cân nặng ở Theo dõi sức khỏe để tính BMI.'
-                }
-              />
+              <IconField icon="cake">
+                <Input
+                  label="Ngày sinh"
+                  name="dateOfBirth"
+                  type="date"
+                  max={new Date().toISOString().slice(0, 10)}
+                  value={current.dateOfBirth}
+                  onChange={onChange}
+                  error={fieldErrors.dateOfBirth}
+                  className={inputClass}
+                />
+              </IconField>
+              <IconField icon="ruler">
+                <Input
+                  label="Chiều cao (cm)"
+                  name="heightCm"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min={30}
+                  max={250}
+                  placeholder="170"
+                  value={current.heightCm}
+                  onChange={onChange}
+                  error={fieldErrors.heightCm}
+                  hint={
+                    profile?.weightKg !== null && profile?.weightKg !== undefined
+                      ? `Cân nặng ${profile.weightKg} kg từ nhật ký${profile.weightDate ? ` ${profile.weightDate}` : ''}.`
+                      : 'Cân nặng ghi ở Theo dõi sức khỏe.'
+                  }
+                  className={inputClass}
+                />
+              </IconField>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="mt-4 space-y-1.5">
               <span className="font-heading text-primary block text-sm font-semibold">
                 Giới tính
               </span>
@@ -193,60 +261,63 @@ export function ProfilePage() {
                       type="button"
                       role="radio"
                       aria-checked={selected}
+                      aria-label={g.label}
                       onClick={() => patch({ gender: selected ? null : g.value })}
                       className={cn(
-                        'rounded-lg border px-4 py-2 text-sm font-medium transition',
+                        'inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border px-4 text-sm font-medium transition',
+                        'focus-visible:ring-tertiary focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                         selected
                           ? 'border-primary bg-primary text-white'
                           : 'bg-surface hover:border-primary border-neutral-300 text-neutral-700',
                       )}
                     >
+                      <NavIcon name={GENDER_ICON[g.value]} className="size-4" />
                       {g.label}
                     </button>
                   )
                 })}
               </div>
-              <p className="text-xs text-neutral-500">Bấm lại để bỏ chọn.</p>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className={SECTION}>
-            <h2 className="text-lg">Bệnh nền & dị ứng</h2>
-            <TagInput
-              label="Bệnh nền"
-              value={current.chronicConditions}
-              onChange={(chronicConditions) => patch({ chronicConditions })}
-              suggestions={CHRONIC_CONDITION_SUGGESTIONS}
-              placeholder="Ví dụ: Tăng huyết áp"
-              hint="Gõ tên bệnh rồi nhấn Enter, hoặc chọn gợi ý bên dưới."
-              error={fieldErrors.chronicConditions}
-            />
-
-            <TagInput
-              label="Dị ứng"
-              value={current.allergies}
-              onChange={(allergies) => patch({ allergies })}
-              suggestions={ALLERGY_SUGGESTIONS}
-              placeholder="Ví dụ: Hải sản"
-              hint="Thức ăn, thuốc hoặc tác nhân môi trường bạn bị dị ứng."
-              error={fieldErrors.allergies}
-            />
-          </div>
+          <SectionCard icon="stethoscope" title="Bệnh nền & dị ứng">
+            <div className="space-y-5">
+              <TagInput
+                label="Bệnh nền"
+                value={current.chronicConditions}
+                onChange={(chronicConditions) => patch({ chronicConditions })}
+                suggestions={CHRONIC_CONDITION_SUGGESTIONS}
+                placeholder="Ví dụ: Tăng huyết áp"
+                error={fieldErrors.chronicConditions}
+              />
+              <TagInput
+                label="Dị ứng"
+                value={current.allergies}
+                onChange={(allergies) => patch({ allergies })}
+                suggestions={ALLERGY_SUGGESTIONS}
+                placeholder="Ví dụ: Hải sản"
+                error={fieldErrors.allergies}
+              />
+            </div>
+          </SectionCard>
         </fieldset>
 
-        {saveStatus === 'failed' && error && <Alert variant="error">{error}</Alert>}
-        {saveStatus === 'succeeded' && <Alert variant="success">Đã lưu hồ sơ cá nhân.</Alert>}
-
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {form && (
-            <Button type="button" variant="ghost" onClick={() => setForm(null)}>
-              Hủy thay đổi
-            </Button>
-          )}
-          <Button type="submit" size="lg" loading={saveStatus === 'loading'} disabled={loading}>
-            Lưu hồ sơ
-          </Button>
-        </div>
+        {saveStatus === 'failed' && error && (
+          <Alert variant="error">
+            <span className="flex items-center gap-2">
+              <NavIcon name="alert" className="size-4 shrink-0" />
+              {error}
+            </span>
+          </Alert>
+        )}
+        {saveStatus === 'succeeded' && (
+          <Alert variant="success">
+            <span className="flex items-center gap-2">
+              <NavIcon name="check" className="size-4 shrink-0" />
+              Đã lưu hồ sơ.
+            </span>
+          </Alert>
+        )}
       </form>
 
       <MedicalDisclaimer />

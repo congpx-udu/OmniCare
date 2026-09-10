@@ -13,7 +13,7 @@ interface ChartCardProps {
   children: ReactNode
 }
 
-/** Khung chung cho hai biểu đồ 7 ngày trên Dashboard, bấm vào sang trang Theo dõi */
+/** Khung chung cho hai biểu đồ 7 ngày: icon teal + nhãn ngắn + số; bấm vào sang trang Theo dõi */
 export function ChartCard({
   icon,
   label,
@@ -26,15 +26,15 @@ export function ChartCard({
   return (
     <Link
       to={ROUTES.TRACKING}
-      className="card-3d rounded-card bg-surface-cream hover:border-primary-200 block border border-neutral-200/80 p-5"
+      className="card-3d rounded-card bg-surface-cream hover:border-primary-200 block w-full border border-neutral-200/80 p-5"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="bg-secondary-50 text-secondary flex size-10 shrink-0 items-center justify-center rounded-xl">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="bg-secondary-50 text-secondary flex size-11 shrink-0 items-center justify-center rounded-2xl">
             <NavIcon name={icon} className="size-5" />
           </span>
-          <div>
-            <p className="font-mono text-[11px] font-medium tracking-[0.18em] text-neutral-500 uppercase">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold tracking-wide text-neutral-500 uppercase">
               {label} · 7 ngày
             </p>
             <p className="font-heading text-primary text-xl font-bold">
@@ -46,8 +46,8 @@ export function ChartCard({
           <span
             className={
               badgeTone === 'teal'
-                ? 'bg-secondary-700 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white'
-                : 'rounded-full bg-neutral-200 px-2.5 py-1 text-[11px] font-semibold text-neutral-700'
+                ? 'bg-secondary-700 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white'
+                : 'shrink-0 rounded-full bg-neutral-200 px-2.5 py-1 text-[11px] font-semibold text-neutral-700'
             }
           >
             {badge}

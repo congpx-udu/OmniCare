@@ -1,4 +1,5 @@
 import { useId, useState, type KeyboardEvent } from 'react'
+import { NavIcon } from '@/components/layout'
 import { cn } from '@/utils'
 
 interface TagInputProps {
@@ -13,7 +14,7 @@ interface TagInputProps {
   maxTags?: number
 }
 
-/** Nhập danh sách tag (bệnh nền, dị ứng): gõ rồi Enter/dấu phẩy, hoặc bấm gợi ý */
+/** Nhập danh sách tag (bệnh nền, dị ứng, tủ bếp): gõ rồi Enter/dấu phẩy, hoặc bấm gợi ý */
 export function TagInput({
   label,
   value,
@@ -60,7 +61,7 @@ export function TagInput({
       </label>
       <div
         className={cn(
-          'bg-surface flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2',
+          'bg-surface flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2',
           'focus-within:ring-tertiary/40 transition focus-within:ring-2',
           error ? 'border-danger' : 'focus-within:border-tertiary border-neutral-300',
         )}
@@ -68,25 +69,16 @@ export function TagInput({
         {value.map((tag) => (
           <span
             key={tag}
-            className="bg-primary-50 text-primary inline-flex items-center gap-1 rounded-full py-1 pr-1.5 pl-3 text-sm"
+            className="bg-secondary-50 text-secondary-700 inline-flex items-center gap-1 rounded-full py-1 pr-1 pl-3 text-sm font-medium"
           >
             {tag}
             <button
               type="button"
               onClick={() => remove(tag)}
               aria-label={`Xóa ${tag}`}
-              className="hover:bg-primary-100 rounded-full p-0.5 leading-none"
+              className="hover:bg-secondary-100 flex size-6 cursor-pointer items-center justify-center rounded-full transition"
             >
-              <svg
-                viewBox="0 0 16 16"
-                className="size-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
-              </svg>
+              <NavIcon name="close" className="size-3.5" />
             </button>
           </span>
         ))}
@@ -108,15 +100,19 @@ export function TagInput({
               key={s}
               type="button"
               onClick={() => add(s)}
-              className="hover:border-secondary hover:text-secondary rounded-full border border-neutral-200 px-2.5 py-0.5 text-xs text-neutral-600 transition"
+              className="hover:border-secondary hover:text-secondary inline-flex cursor-pointer items-center gap-1 rounded-full border border-neutral-200 px-2.5 py-1 text-xs text-neutral-600 transition"
             >
-              + {s}
+              <NavIcon name="plus" className="size-3" />
+              {s}
             </button>
           ))}
         </div>
       )}
       {error ? (
-        <p className="text-danger text-xs">{error}</p>
+        <p className="text-danger flex items-center gap-1 text-xs">
+          <NavIcon name="alert" className="size-3.5" />
+          {error}
+        </p>
       ) : hint ? (
         <p className="text-xs text-neutral-500">{hint}</p>
       ) : null}
