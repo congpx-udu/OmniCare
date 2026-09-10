@@ -83,7 +83,7 @@ docker compose down -v                # dừng và xóa luôn dữ liệu
 
 - Container backend đọc biến từ `backend/.env` (`env_file`). Muốn dùng Mongo trong compose thay vì Atlas, bỏ comment dòng `MONGO_URI: mongodb://mongo:27017/omnicare` trong `docker-compose.yml`.
 - Ảnh bệnh án lưu ở volume `backend-uploads`, dữ liệu Mongo ở volume `mongo-data`.
-- Frontend chưa có Dockerfile (chạy `npm run build` rồi phục vụ `dist/` bằng nginx/CDN khi deploy).
+- `frontend/web` không nằm trong `docker-compose.yml` (dev dùng `npm run dev`), nhưng có `Dockerfile` riêng (build Vite rồi phục vụ bằng Nginx) dùng khi deploy — xem mục **Triển khai** bên dưới.
 
 ## Test và CI
 
@@ -95,6 +95,67 @@ cd frontend/web && npm run typecheck && npm run lint && npm run build
 
 - Test backend chạy tích hợp qua HTTP với DB test riêng (xóa sạch trước mỗi file) và một **AI giả lập** trong `tests/setup.ts`, nên không cần khóa LLM. Phủ: auth, profile, chat hai luồng, records nhiều trang + bảng thuốc, tracking + phân tích, xử lý lỗi (JSON hỏng, quá số file), và IDOR (user này không đọc được dữ liệu user khác).
 - GitHub Actions (`.github/workflows/ci.yml`) chạy cả ba phần khi push lên `main`/`development` hoặc mở PR.
+
+## Triển khai (deploy)
+
+Cả 3 dịch vụ đều có `Dockerfile` riêng (`ai/Dockerfile`, `backend/Dockerfile`, `frontend/web/Dockerfile`) — deploy y hệt nhau trên **Render** hoặc **Railway** (hoặc bất kỳ nền tảng nào build Dockerfile từ một thư mục con của repo). Không có blueprint/IaC sẵn trong repo; các bước dưới đây làm thủ công trên dashboard, mất khoảng 15–20 phút.
+
+**Thứ tự: AI → Backend → Frontend** — backend cần biết URL của AI trước khi khởi động; frontend cần biết URL của backend ngay **lúc build** (Vite đóng gói `VITE_API_URL` vào bundle, không đổi được lúc chạy).
+
+### 0) MongoDB Atlas
+
+Vào **Network Access** trên Atlas, thêm `0.0.0.0/0` vào IP Access List (Render/Railway có IP xuất phát động, không whitelist được IP cụ thể trừ khi mua gói Static IP). Nếu tài khoản dev/test còn IP cũ bị chặn, đây là lý do. Đổi mật khẩu user DB nếu đã lộ trong lúc dev.
+
+### 1) Dịch vụ AI (`ai/`)
+
+Không cần public ra Internet, chỉ backend gọi tới:
+
+- **Render**: New → **Private Service**. Root Directory `ai`, nền tảng tự nhận Dockerfile.
+- **Railway**: New → GitHub Repo, chọn thư mục `ai`; vào Settings tắt "Public Networking" nếu muốn giữ nội bộ (bật lên cũng không sao, endpoint không có gì nhạy cảm ngoài quota LLM).
+
+Biến môi trường (copy từ `ai/.env`, **dùng khóa LLM riêng cho production**, đừng tái dùng khóa free-tier của lúc dev):
+
+| Biến | Giá trị |
+|---|---|
+| `AI_ENV` | `production` |
+| `LLM_API_KEY` | khóa LLM production |
+| `LLM_BASE_URL` | ví dụ `https://generativelanguage.googleapis.com/v1beta/openai` |
+| `LLM_MODEL` | ví dụ `gemini-3.5-flash-lite` |
+| `LLM_TIMEOUT` | `30` |
+
+Healthcheck `/health` đã khai báo sẵn trong Dockerfile. Sau khi deploy, ghi lại **URL nội bộ** nền tảng cấp cho service (Render: theo tên service, ví dụ service tên `omnicare-ai` thì URL nội bộ là `http://omnicare-ai:8000`; Railway: `http://<service>.railway.internal:8000`) — dùng ở bước 2.
+
+### 2) Backend (`backend/`)
+
+Web Service công khai (Render: New → **Web Service**; Railway: New → GitHub Repo, thư mục `backend`).
+
+| Biến | Giá trị |
+|---|---|
+| `NODE_ENV` | `production` |
+| `MONGO_URI` | chuỗi kết nối Atlas |
+| `JWT_SECRET` | chuỗi ngẫu nhiên ≥ 32 ký tự (Render có nút "Generate") |
+| `JWT_EXPIRES_IN` | `7d` |
+| `CORS_ORIGIN` | URL frontend (bước 3) — tạm để trống/`*` rồi quay lại sửa sau khi có URL |
+| `OPENWEATHER_API_KEY` | khóa OpenWeather riêng cho production |
+| `AI_SERVICE_URL` | URL nội bộ của AI ở bước 1 |
+
+Healthcheck `/api/health` phải trả `{"status":"ok","db":"connected","ai":"ok"}`.
+
+### 3) Frontend (`frontend/web/`)
+
+- **Cách gọn nhất (Render Static Site)**: New → **Static Site**, không cần Dockerfile. Build Command `npm ci && npm run build`, Publish Directory `dist`. Thêm **Redirect/Rewrite Rule**: nguồn `/*` → đích `/index.html`, loại **Rewrite** (bắt buộc, không có thì tải thẳng một URL con như `/dashboard` sẽ ra 404 vì đó là route phía React Router, không phải file thật). Miễn phí, có CDN + HTTPS.
+- **Cách dùng Dockerfile** (khi nền tảng không có kiểu "Static Site" riêng, ví dụ Railway): deploy như Web Service bình thường, Root Directory `frontend/web`, thêm biến `VITE_API_URL=https://<backend-url>/api` **trước khi bấm Deploy lần đầu** (đổi sau phải build lại mới có tác dụng).
+
+Deploy xong, quay lại bước 2 sửa `CORS_ORIGIN` của backend thành đúng URL frontend rồi redeploy backend.
+
+### Kiểm tra sau khi deploy
+
+```bash
+curl https://<backend-url>/api/health
+# {"success":true,"data":{"status":"ok","db":"connected","ai":"ok","uptime":...}}
+```
+
+Mở frontend, đăng ký tài khoản mới, thử một lượt chat và tải một ảnh đơn thuốc để chắc cả 3 dịch vụ nói chuyện được với nhau.
 
 ## Bảo mật và dữ liệu y tế (NFR-05)
 
