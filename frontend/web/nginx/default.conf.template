@@ -1,0 +1,26 @@
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    # Healthcheck cho Docker / nền tảng deploy
+    location = /health {
+        default_type text/plain;
+        return 200 'ok';
+    }
+
+    # SPA: mọi đường dẫn không khớp file tĩnh trả về index.html để React Router xử lý
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # File có hash trong tên (assets/*.js, *.css) cache dài hạn
+    location /assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+}
