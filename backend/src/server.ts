@@ -5,8 +5,8 @@ import { logger } from './config/logger.js'
 
 async function main() {
   await connectDB()
-  const server = app.listen(env.PORT, () => {
-    logger.info(`API listening on http://localhost:${env.PORT}/api`)
+  const server = app.listen(env.PORT, '0.0.0.0', () => {
+    logger.info(`API listening on http://0.0.0.0:${env.PORT}/api`)
   })
 
   const shutdown = async (signal: string) => {
