@@ -40,7 +40,19 @@ def _normalize(mode: str, raw: dict) -> dict:
 @router.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest) -> ChatResponse:
     system = build_system_prompt(req)
-    messages = [{"role": t.role, "content": t.content} for t in req.messages]
+    messages: list[dict] = [{"role": t.role, "content": t.content} for t in req.messages]
+    if req.images:
+        # Ảnh đi kèm lượt user cuối: chuyển content sang dạng đa phương thức kiểu OpenAI
+        last = messages[-1]
+        parts: list[dict] = [
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{img.mime_type};base64,{img.image_base64}"},
+            }
+            for img in req.images
+        ]
+        parts.append({"type": "text", "text": str(last["content"])})
+        messages[-1] = {"role": "user", "content": parts}
     started = time.perf_counter()
     try:
         raw, model = await run_in_threadpool(chat_json, system, messages)

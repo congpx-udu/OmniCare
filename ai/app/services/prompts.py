@@ -111,6 +111,15 @@ def build_system_prompt(req: ChatRequest) -> str:
         ctx.append(f"Cảm nhận hôm nay: {req.feeling}")
     if req.records_summary:
         ctx.append(f"Tóm tắt bệnh án đã lưu: {req.records_summary}")
+    if req.images:
+        ctx.append(
+            f"Người dùng gửi kèm {len(req.images)} ảnh. Quy tắc ảnh: mô tả ngắn gọn thứ nhìn thấy và trả lời "
+            "theo ngữ cảnh — ảnh món ăn/nguyên liệu: nhận diện món, ước lượng phù hợp với thể trạng, gợi ý cách ăn "
+            "hoặc thay thế; ảnh vùng da/vết thương/triệu chứng: mô tả dấu hiệu quan sát được, KHÔNG chẩn đoán, "
+            "đánh giá mức độ và khuyên đi khám khi cần (intent=symptom); ảnh đơn thuốc/kết quả xét nghiệm: đọc "
+            "thông tin chính và giải thích dễ hiểu, không thay đổi hay bổ sung liều. Ảnh mờ hoặc không liên quan "
+            "thì nói rõ."
+        )
     if req.mode in ("food", "health") and req.pantry:
         ctx.append("Tủ bếp (nguyên liệu đang có): " + ", ".join(req.pantry))
         ctx.append(

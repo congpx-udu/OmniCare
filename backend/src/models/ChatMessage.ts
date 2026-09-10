@@ -13,6 +13,11 @@ const chatMessageSchema = new Schema(
     content: { type: String, required: true },
     // Bối cảnh tại thời điểm gửi (tin của user): thời tiết, vị trí, cảm nhận
     context: { type: Schema.Types.Mixed },
+    // Ảnh người dùng gửi kèm (đường dẫn file trong uploads/, không lưu base64)
+    attachments: {
+      type: [{ path: { type: String, required: true }, mime: { type: String, required: true } }],
+      default: [],
+    },
     // Dữ liệu có cấu trúc từ AI (tin của assistant): risk_level, meals, possible_conditions...
     meta: { type: Schema.Types.Mixed },
   },

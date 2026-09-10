@@ -37,6 +37,13 @@ class ProfileContext(BaseModel):
     allergies: list[str] = Field(default_factory=list)
 
 
+class ChatImage(BaseModel):
+    """Ảnh người dùng gửi kèm tin (đồ ăn, vùng da, đơn thuốc...). base64 không kèm tiền tố data:."""
+
+    image_base64: str = Field(min_length=100)
+    mime_type: Literal["image/jpeg", "image/png", "image/webp"]
+
+
 class ChatRequest(BaseModel):
     mode: ChatMode
     messages: list[ChatTurn] = Field(min_length=1, max_length=20)
@@ -50,6 +57,8 @@ class ChatRequest(BaseModel):
     records_summary: str | None = Field(default=None, max_length=2000)
     # Tủ bếp mức 1: nguyên liệu người dùng đang có (chỉ luồng food, không lưu)
     pantry: list[str] = Field(default_factory=list, max_length=30)
+    # Ảnh kèm lượt hỏi cuối (tối đa 4), backend đọc từ file đã upload
+    images: list[ChatImage] = Field(default_factory=list, max_length=4)
 
 
 class MealSuggestion(BaseModel):

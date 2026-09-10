@@ -2,6 +2,12 @@ import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { auth, registerAndLogin } from './helpers.js'
 
+// PNG 1x1 hợp lệ để multer nhận mime image/png
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+)
+
 describe('chat', () => {
   it('gửi tin, lưu cặp user/assistant theo luồng, có disclaimer, lịch sử tách riêng', async () => {
     const { app, token } = await registerAndLogin()
@@ -70,6 +76,32 @@ describe('chat', () => {
       .set(auth(token))
       .expect(200)
     expect(history.body.data).toHaveLength(4)
+  })
+
+  it('gửi kèm ảnh (multipart): lưu attachments, lấy lại được ảnh, user khác bị chặn, xóa lịch sử xóa ảnh', async () => {
+    const { app, token } = await registerAndLogin()
+    const other = await registerAndLogin('B')
+    const res = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .field('mode', 'health')
+      .field('message', 'Món này ăn được không?')
+      .field('pantry', JSON.stringify(['gạo']))
+      .attach('images', PNG, { filename: 'a.png', contentType: 'image/png' })
+      .attach('images', PNG, { filename: 'b.png', contentType: 'image/png' })
+      .expect(201)
+    const msg = res.body.data.userMessage
+    expect(msg.attachments).toEqual([
+      { index: 0, mime: 'image/png' },
+      { index: 1, mime: 'image/png' },
+    ])
+    const img = await request(app).get(`/api/chat/${msg.id}/image/1`).set(auth(token)).expect(200)
+    expect(img.headers['content-type']).toContain('image/png')
+    await request(app).get(`/api/chat/${msg.id}/image/0`).set(auth(other.token)).expect(404)
+    await request(app).get(`/api/chat/${msg.id}/image/2`).set(auth(token)).expect(404)
+
+    await request(app).delete('/api/chat/history?mode=health').set(auth(token)).expect(200)
+    await request(app).get(`/api/chat/${msg.id}/image/0`).set(auth(token)).expect(404)
   })
 
   it('validate mode và message; user khác không thấy lịch sử', async () => {

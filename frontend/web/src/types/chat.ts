@@ -32,12 +32,21 @@ export interface AssistantMeta {
   latencyMs: number
 }
 
+/** Ảnh người dùng gửi kèm; lấy qua GET /chat/:id/image/:index (sau xác thực) */
+export interface ChatAttachment {
+  index: number
+  mime: string
+}
+
 export interface ChatMessage {
   id: string
   mode: ChatMode
   role: 'user' | 'assistant'
   content: string
   meta: AssistantMeta | null
+  attachments: ChatAttachment[]
+  /** Chỉ ở tin đang gửi (optimistic): object URL xem trước ảnh, chưa có id trên server */
+  previews?: string[]
   createdAt: string
 }
 

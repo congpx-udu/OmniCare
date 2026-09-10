@@ -119,6 +119,8 @@ const chatSlice = createSlice({
           role: 'user',
           content: message,
           meta: null,
+          attachments: [],
+          previews: action.meta.arg.previews,
           createdAt: new Date().toISOString(),
         })
       })

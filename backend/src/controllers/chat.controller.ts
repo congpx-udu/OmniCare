@@ -1,10 +1,27 @@
 import type { Request, Response } from 'express'
 import * as chatService from '../services/chat.service.js'
 import { created, ok } from '../utils/response.js'
-import type { ChatHistoryQuery, ClearHistoryQuery } from '../validators/chat.validator.js'
+import type {
+  ChatHistoryQuery,
+  ChatImageParams,
+  ClearHistoryQuery,
+} from '../validators/chat.validator.js'
 
 export async function send(req: Request, res: Response) {
-  created(res, await chatService.sendMessage(req.userId!, req.body))
+  const files = (req.files as Express.Multer.File[] | undefined) ?? []
+  created(res, await chatService.sendMessage(req.userId!, req.body, files))
+}
+
+export async function image(req: Request, res: Response) {
+  const params = res.locals.params as ChatImageParams
+  const { absolutePath, mime } = await chatService.getAttachment(
+    req.userId!,
+    params.id,
+    params.index,
+  )
+  res.type(mime)
+  res.setHeader('Cache-Control', 'private, max-age=3600')
+  res.sendFile(absolutePath)
 }
 
 export async function history(_req: Request, res: Response) {

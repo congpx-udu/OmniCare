@@ -50,6 +50,14 @@ def test_health_prompt_covers_both_symptom_and_food_and_links_turns():
     assert "115" in p and "Hải sản" in p
 
 
+def test_prompt_mentions_attached_images():
+    req = _chat("health").model_copy(
+        update={"images": [{"image_base64": "x" * 120, "mime_type": "image/png"}]}
+    )
+    p = build_system_prompt(req)
+    assert "gửi kèm 1 ảnh" in p and "KHÔNG chẩn đoán" in p
+
+
 def test_symptom_prompt_has_risk_levels_and_emergency_rule():
     p = build_system_prompt(_chat("symptom"))
     for level in ("emergency", "doctor", "home", "none"):
