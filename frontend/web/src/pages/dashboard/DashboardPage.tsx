@@ -186,20 +186,32 @@ export function DashboardPage() {
         </Link>
       )}
 
-      {latestRecord && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg">Bệnh án gần nhất</h2>
-            <Link
-              to={ROUTES.RECORDS}
-              className="text-secondary text-sm font-semibold hover:underline"
-            >
-              Xem tất cả
-            </Link>
-          </div>
-          <RecordCard record={latestRecord} />
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg">Bệnh án gần nhất</h2>
+          <Link
+            to={ROUTES.RECORDS}
+            className="text-secondary text-sm font-semibold hover:underline"
+          >
+            Xem tất cả
+          </Link>
         </div>
-      )}
+        {latestRecord ? (
+          <RecordCard record={latestRecord} />
+        ) : (
+          <Link
+            to={ROUTES.RECORDS}
+            className="card-3d rounded-card bg-surface hover:border-primary-200 flex items-center justify-between gap-3 border border-neutral-200 p-4"
+          >
+            <p className="text-sm text-neutral-600">
+              {records.listStatus === 'loading'
+                ? 'Đang tải bệnh án...'
+                : 'Chưa có bệnh án nào. Tải ảnh đơn thuốc hoặc phiếu khám để AI đọc và lưu trữ.'}
+            </p>
+            <span className="text-secondary shrink-0 text-sm font-semibold">Tải lên →</span>
+          </Link>
+        )}
+      </div>
 
       {latestAdvice && (
         <Link
