@@ -1,16 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/common'
+import { NavIcon } from '@/components/layout'
 import { LANDING_MENU, ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/utils'
 
-const EASE = 'ease-[cubic-bezier(0.76,0,0.24,1)]'
-
-/** Navbar cố định trên landing: logo, nút Menu (desktop), hamburger + panel trượt (mobile) */
+/** Navbar landing: trong suốt khi ở đỉnh, nền kính mờ khi cuộn; mobile mở panel dọc */
 export function LandingNavbar() {
   const { isAuthenticated } = useAuth()
   const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -20,124 +27,120 @@ export function LandingNavbar() {
   }, [open])
 
   const close = () => setOpen(false)
-  const menuItems = LANDING_MENU.filter((m) => !('route' in m && m.route) || !isAuthenticated)
 
   return (
-    <>
-      <header className="bg-surface/80 fixed top-0 right-0 left-0 z-50 flex items-center justify-between px-4 py-2 backdrop-blur-md md:px-6 md:py-3">
-        <Link to={ROUTES.HOME} onClick={close} className="flex flex-col">
-          <Logo variant="full" className="h-8 md:h-9" />
-          <span className="text-primary mt-1 text-[8px] leading-none font-medium tracking-wide uppercase md:text-[9px]">
-            Trợ lý sức khỏe toàn diện AI
-          </span>
+    <header
+      className={cn(
+        'fixed inset-x-0 top-0 z-50 transition-all duration-300',
+        scrolled
+          ? 'bg-surface/95 border-b border-neutral-200/70 shadow-[0_4px_16px_-8px_rgba(11,37,69,0.25)]'
+          : 'border-b border-transparent',
+      )}
+    >
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-4 px-4 sm:px-6 lg:h-18 lg:px-8">
+        <Link to={ROUTES.HOME} onClick={close} aria-label="OmniCare — trang chủ">
+          <Logo variant="full" className="h-8 lg:h-9" />
         </Link>
 
-        {/* Desktop */}
-        <div className="hidden items-center gap-5 md:flex">
-          <span className="text-primary text-sm font-semibold">
-            Không thay thế chẩn đoán y khoa
-          </span>
+        <nav className="ml-6 hidden items-center gap-1 lg:flex">
+          {LANDING_MENU.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="hover:text-primary hover:bg-primary-50 rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 transition"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
           {isAuthenticated ? (
             <Link
               to={ROUTES.DASHBOARD}
-              className="bg-primary hover:bg-primary-600 rounded-full px-6 py-3 text-sm font-semibold text-white transition-colors duration-200"
+              className="font-heading bg-primary hover:bg-primary-600 inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition active:scale-95"
             >
               Vào ứng dụng
+              <NavIcon name="arrow-right" className="size-4" />
             </Link>
           ) : (
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              className="bg-surface border-primary text-primary hover:bg-primary rounded-full border px-6 py-3 text-sm font-semibold transition-colors duration-200 hover:text-white"
-            >
-              Menu
-            </button>
+            <>
+              <Link
+                to={ROUTES.LOGIN}
+                className="font-heading text-primary hover:bg-primary-50 inline-flex h-11 items-center rounded-xl px-4 text-sm font-semibold transition"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                to={ROUTES.REGISTER}
+                className="font-heading bg-primary hover:bg-primary-600 inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition active:scale-95"
+              >
+                Dùng thử miễn phí
+                <NavIcon name="arrow-right" className="size-4" />
+              </Link>
+            </>
           )}
         </div>
 
-        {/* Mobile hamburger */}
         <button
           type="button"
           aria-label={open ? 'Đóng menu' : 'Mở menu'}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="relative flex size-10 items-center justify-center md:hidden"
+          className="text-primary ml-auto flex size-11 cursor-pointer items-center justify-center rounded-xl transition hover:bg-neutral-100 lg:hidden"
         >
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className={cn(
-                'bg-primary absolute h-0.5 w-6 rounded-full transition-all duration-300',
-                EASE,
-                i === 0 && (open ? 'translate-y-0 rotate-45' : '-translate-y-2'),
-                i === 1 && (open ? 'scale-x-0 opacity-0' : 'scale-x-100 opacity-100'),
-                i === 2 && (open ? 'translate-y-0 -rotate-45' : 'translate-y-2'),
-              )}
-            />
-          ))}
+          <NavIcon name={open ? 'close' : 'menu'} className="size-6" />
         </button>
-      </header>
-
-      {/* Overlay + panel (cả mobile lẫn desktop khi bấm Menu) */}
-      <div
-        className={cn('fixed inset-0 z-40', open ? 'pointer-events-auto' : 'pointer-events-none')}
-      >
-        <button
-          type="button"
-          aria-label="Đóng menu"
-          onClick={close}
-          className={cn(
-            'bg-primary-900/20 absolute inset-0 backdrop-blur-sm transition-opacity duration-500',
-            open ? 'opacity-100' : 'opacity-0',
-          )}
-        />
-        <div
-          className={cn(
-            'bg-surface absolute top-0 right-0 h-full w-[85%] max-w-sm shadow-2xl transition-transform duration-500',
-            EASE,
-            open ? 'translate-x-0' : 'translate-x-full',
-          )}
-        >
-          <nav className="flex h-full flex-col justify-center gap-1 px-8">
-            {menuItems.map((item, i) => {
-              const cls = cn(
-                'font-heading text-primary hover:text-secondary text-4xl font-bold transition-all duration-500',
-                EASE,
-                open ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0',
-              )
-              const style = { transitionDelay: open ? `${100 + i * 60}ms` : '0ms' }
-              return 'route' in item && item.route ? (
-                <Link key={item.label} to={item.href} onClick={close} className={cls} style={style}>
-                  {item.label}
-                </Link>
-              ) : (
-                <a key={item.label} href={item.href} onClick={close} className={cls} style={style}>
-                  {item.label}
-                </a>
-              )
-            })}
-            <div
-              className={cn(
-                'mt-8 border-t border-neutral-200 pt-8 transition-all duration-500',
-                EASE,
-                open ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0',
-              )}
-              style={{ transitionDelay: open ? '450ms' : '0ms' }}
-            >
-              <p className="text-primary mb-4 text-sm font-semibold">
-                OmniCare không thay thế chẩn đoán y khoa.
-              </p>
-              <Link
-                to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.REGISTER}
-                onClick={close}
-                className="bg-primary hover:bg-primary-600 block w-full rounded-full px-6 py-4 text-center text-sm font-semibold text-white transition-colors duration-200"
-              >
-                {isAuthenticated ? 'Vào ứng dụng' : 'Đăng ký miễn phí'}
-              </Link>
-            </div>
-          </nav>
-        </div>
       </div>
-    </>
+
+      {/* Panel mobile */}
+      <div
+        className={cn(
+          'bg-surface overflow-hidden border-b border-neutral-200 transition-[max-height,opacity] duration-300 lg:hidden',
+          open ? 'max-h-[32rem] opacity-100' : 'max-h-0 opacity-0',
+        )}
+      >
+        <nav className="flex flex-col gap-1 px-4 pt-2 pb-5 sm:px-6">
+          {LANDING_MENU.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={close}
+              className="hover:bg-primary-50 hover:text-primary font-heading rounded-xl px-3 py-3 text-base font-semibold text-neutral-700 transition"
+            >
+              {item.label}
+            </a>
+          ))}
+          <div className="mt-3 grid gap-2 border-t border-neutral-200 pt-4">
+            {isAuthenticated ? (
+              <Link
+                to={ROUTES.DASHBOARD}
+                onClick={close}
+                className="font-heading bg-primary inline-flex h-12 items-center justify-center rounded-xl text-sm font-semibold text-white"
+              >
+                Vào ứng dụng
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to={ROUTES.REGISTER}
+                  onClick={close}
+                  className="font-heading bg-primary inline-flex h-12 items-center justify-center rounded-xl text-sm font-semibold text-white"
+                >
+                  Dùng thử miễn phí
+                </Link>
+                <Link
+                  to={ROUTES.LOGIN}
+                  onClick={close}
+                  className="font-heading text-primary inline-flex h-12 items-center justify-center rounded-xl border border-neutral-300 text-sm font-semibold"
+                >
+                  Đăng nhập
+                </Link>
+              </>
+            )}
+          </div>
+        </nav>
+      </div>
+    </header>
   )
 }

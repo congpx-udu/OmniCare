@@ -1,89 +1,98 @@
-import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { HERO_BARS, LANDING_FOCAL, LANDING_IMAGES, ROUTES } from '@/constants'
+import { NavIcon } from '@/components/layout'
+import { HERO_HIGHLIGHTS, HERO_STATS, ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
-import { useImageWidth } from '@/hooks/useImageWidth'
-import { useIsMobile } from '@/hooks/useIsMobile'
-import { useMaskPositions } from '@/hooks/useMaskPositions'
-import { useStaggeredReveal } from '@/hooks/useStaggeredReveal'
-import { staggerStyle } from '@/utils'
-import { MaskedCard } from './MaskedCard'
+import { AppPreview } from './AppPreview'
+import { Reveal } from './Reveal'
 
-/** Màn 1: 3 thanh nổi bật + card hero lớn, chung một ảnh nền (masked cards) */
+/** Màn mở đầu: tiêu đề + CTA bên trái, ảnh minh họa sản phẩm bên phải */
 export function HeroSection() {
   const { isAuthenticated } = useAuth()
-  const isMobile = useIsMobile()
-  const sectionRef = useRef<HTMLElement | null>(null)
-  const cardsRef = useRef<Array<HTMLDivElement | null>>([])
-  const positions = useMaskPositions(sectionRef, cardsRef)
-  const sectionHeight = positions[0]?.sh ?? 0
-  const imageWidth = useImageWidth(LANDING_IMAGES.hero, sectionHeight)
-  const focalX = isMobile ? LANDING_FOCAL.hero.mobile : LANDING_FOCAL.hero.desktop
-  const visible = useStaggeredReveal(sectionRef)
 
   return (
-    <section
-      id="hero"
-      ref={sectionRef}
-      className="flex h-screen w-full flex-col gap-1.5 overflow-hidden px-3 pt-24 pb-1.5 md:gap-2 md:px-5 md:pb-2"
-    >
-      {HERO_BARS.map((label, i) => (
-        <MaskedCard
-          key={label}
-          cardRef={(el) => {
-            cardsRef.current[i] = el
-          }}
-          bgImage={LANDING_IMAGES.hero}
-          position={positions[i]}
-          imageWidth={imageWidth}
-          focalX={focalX}
-          className="relative h-14 w-full shrink-0 overflow-hidden rounded-xl md:h-20 md:rounded-2xl"
-          style={staggerStyle(visible, i)}
-        >
-          <span className="font-heading text-primary relative z-10 flex h-full items-center justify-center text-center text-lg font-bold md:text-3xl">
-            {label}
-          </span>
-        </MaskedCard>
-      ))}
+    <section id="hero" className="relative overflow-hidden pt-28 pb-16 lg:pt-36 lg:pb-24">
+      {/* Nền: hai quầng màu vẽ bằng gradient (rẻ, không dùng blur/mask) */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(42rem_30rem_at_5%_-15%,rgba(0,122,120,0.16),transparent_60%),radial-gradient(46rem_32rem_at_100%_-10%,rgba(2,132,199,0.14),transparent_60%)]"
+      />
 
-      <MaskedCard
-        cardRef={(el) => {
-          cardsRef.current[3] = el
-        }}
-        bgImage={LANDING_IMAGES.hero}
-        position={positions[3]}
-        imageWidth={imageWidth}
-        focalX={focalX}
-        className="relative min-h-0 w-full flex-1 overflow-hidden rounded-xl md:rounded-2xl"
-        style={staggerStyle(visible, 3)}
-      >
-        {/* Nội dung xếp theo cột: mô tả ở trên, tiêu đề + CTA ở dưới, không bao giờ đè nhau */}
-        <div className="relative z-10 flex h-full flex-col justify-between p-4 md:p-7">
-          <p className="text-primary max-w-[220px] text-xs leading-4 font-semibold md:max-w-[340px] md:text-sm md:leading-5">
-            Một trợ lý duy nhất thay cho nhiều ứng dụng rời rạc, hiểu thời tiết, vị trí và cảm nhận
-            của bạn hôm nay.
-          </p>
+      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
+        <div>
+          <Reveal>
+            <span className="border-secondary/30 bg-secondary-50 text-secondary-700 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold">
+              <NavIcon name="sparkles" className="size-3.5" />
+              Trợ lý sức khỏe toàn diện bằng AI
+            </span>
+          </Reveal>
 
-          <div className="flex items-end justify-between gap-4">
-            <div className="min-w-0">
-              <span className="text-primary mb-1 block text-xs font-semibold md:mb-2 md:text-sm">
-                Trợ lý Sức khỏe Toàn diện AI
+          <Reveal delay={80}>
+            <h1 className="text-primary mt-5 text-4xl leading-[1.1] font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              Chăm sóc sức khỏe
+              <br />
+              <span className="from-secondary to-tertiary bg-linear-to-r bg-clip-text text-transparent">
+                chủ động
               </span>
-              <h1 className="font-heading text-primary text-[clamp(2.5rem,min(11vw,18vh),11rem)] leading-[0.82] font-bold tracking-tight">
-                Omni
-                <br />
-                Care
-              </h1>
+              , mỗi ngày.
+            </h1>
+          </Reveal>
+
+          <Reveal delay={140}>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-neutral-600 sm:text-lg">
+              Kể điều bạn đang gặp, gửi ảnh đơn thuốc hay bữa ăn. OmniCare đánh giá sơ bộ, gợi ý
+              thực đơn và vận động theo thời tiết, thể trạng của riêng bạn.
+            </p>
+          </Reveal>
+
+          <Reveal delay={200}>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.REGISTER}
+                className="font-heading bg-primary hover:bg-primary-600 inline-flex h-13 items-center gap-2 rounded-xl px-6 text-sm font-semibold text-white shadow-[0_16px_32px_-16px_rgba(11,37,69,0.8)] transition active:scale-95"
+              >
+                {isAuthenticated ? 'Vào ứng dụng' : 'Bắt đầu miễn phí'}
+                <NavIcon name="arrow-right" className="size-4" />
+              </Link>
+              <a
+                href="#features"
+                className="font-heading bg-surface text-primary hover:border-secondary hover:text-secondary inline-flex h-13 items-center gap-2 rounded-xl border border-neutral-300 px-6 text-sm font-semibold transition"
+              >
+                Xem tính năng
+                <NavIcon name="chevron-down" className="size-4" />
+              </a>
             </div>
-            <Link
-              to={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.REGISTER}
-              className="bg-primary font-heading hover:bg-primary-600 shrink-0 rounded-full px-5 py-3 text-sm font-bold whitespace-nowrap text-white transition-colors md:px-8 md:py-4 md:text-lg"
-            >
-              {isAuthenticated ? 'Vào ứng dụng' : 'Dùng thử miễn phí'}
-            </Link>
-          </div>
+          </Reveal>
+
+          <Reveal delay={260}>
+            <ul className="mt-8 flex flex-wrap gap-2">
+              {HERO_HIGHLIGHTS.map((h) => (
+                <li
+                  key={h.label}
+                  className="bg-surface/80 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 backdrop-blur"
+                >
+                  <NavIcon name={h.icon} className="text-secondary size-3.5" />
+                  {h.label}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+
+          <Reveal delay={320}>
+            <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-neutral-200 pt-6">
+              {HERO_STATS.map((s) => (
+                <div key={s.label}>
+                  <dt className="font-heading text-primary text-2xl font-bold">{s.value}</dt>
+                  <dd className="mt-0.5 text-xs leading-snug text-neutral-500">{s.label}</dd>
+                </div>
+              ))}
+            </dl>
+          </Reveal>
         </div>
-      </MaskedCard>
+
+        <Reveal delay={160} className="lg:pl-6">
+          <AppPreview />
+        </Reveal>
+      </div>
     </section>
   )
 }
