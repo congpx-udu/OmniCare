@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Logo } from '@/components/common'
 import { NavIcon } from '@/components/layout'
 import { LANDING_MENU, ROUTES } from '@/constants'
+import { useActiveSection } from '@/hooks/useActiveSection'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/utils'
 
@@ -11,6 +12,7 @@ export function LandingNavbar() {
   const { isAuthenticated } = useAuth()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const activeId = useActiveSection(LANDING_MENU.map((item) => item.href.slice(1)))
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -43,15 +45,24 @@ export function LandingNavbar() {
         </Link>
 
         <nav className="ml-6 hidden items-center gap-1 lg:flex">
-          {LANDING_MENU.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="hover:text-primary hover:bg-primary-50 rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 transition"
-            >
-              {item.label}
-            </a>
-          ))}
+          {LANDING_MENU.map((item) => {
+            const isActive = activeId === item.href.slice(1)
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? 'true' : undefined}
+                className={cn(
+                  'rounded-full px-3.5 py-2 text-sm font-medium transition',
+                  isActive
+                    ? 'bg-primary-50 text-primary font-semibold'
+                    : 'hover:text-primary hover:bg-primary-50 text-neutral-600',
+                )}
+              >
+                {item.label}
+              </a>
+            )
+          })}
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 lg:flex">
@@ -101,16 +112,25 @@ export function LandingNavbar() {
         )}
       >
         <nav className="flex flex-col gap-1 px-4 pt-2 pb-5 sm:px-6">
-          {LANDING_MENU.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={close}
-              className="hover:bg-primary-50 hover:text-primary font-heading rounded-xl px-3 py-3 text-base font-semibold text-neutral-700 transition"
-            >
-              {item.label}
-            </a>
-          ))}
+          {LANDING_MENU.map((item) => {
+            const isActive = activeId === item.href.slice(1)
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={close}
+                aria-current={isActive ? 'true' : undefined}
+                className={cn(
+                  'font-heading rounded-xl px-3 py-3 text-base font-semibold transition',
+                  isActive
+                    ? 'bg-primary-50 text-primary'
+                    : 'hover:bg-primary-50 hover:text-primary text-neutral-700',
+                )}
+              >
+                {item.label}
+              </a>
+            )
+          })}
           <div className="mt-3 grid gap-2 border-t border-neutral-200 pt-4">
             {isAuthenticated ? (
               <Link
