@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Alert, IconButton, MedicalDisclaimer, PageBanner, SectionCard } from '@/components/common'
 import { AdviceCard, LogForm, LogHistory, TrendChart } from '@/components/tracking'
 import { METRICS, type MetricKey } from '@/constants'
+import { useFeedback } from '@/hooks/useFeedback'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import {
   analyzeLogs,
@@ -20,6 +21,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 /** Theo dõi sức khỏe: nhật ký chỉ số + hoạt động → AI phân tích, đề xuất cải thiện; biểu đồ SVG */
 export function TrackingPage() {
   const dispatch = useAppDispatch()
+  const { toast, confirm: ask } = useFeedback()
   const {
     logs,
     logsStatus,
@@ -51,10 +53,24 @@ export function TrackingPage() {
   const activeMetric = availableMetrics.includes(metric) ? metric : availableMetrics[0]
   const lastLog = logs.at(-1) ?? null
 
-  const onSave = (d: string, payload: UpsertLogPayload) =>
-    void dispatch(saveLog({ date: d, payload }))
-  const onDelete = (d: string) => {
-    if (window.confirm('Xóa nhật ký ngày này?')) void dispatch(removeLog(d))
+  const onSave = async (d: string, payload: UpsertLogPayload) => {
+    const result = await dispatch(saveLog({ date: d, payload }))
+    if (saveLog.fulfilled.match(result)) {
+      toast({ title: 'Đã lưu nhật ký', description: formatDate(d), tone: 'success' })
+    } else {
+      toast({ title: 'Lưu nhật ký thất bại', tone: 'error' })
+    }
+  }
+  const onDelete = async (d: string) => {
+    const ok = await ask({
+      title: 'Xóa nhật ký ngày này?',
+      description: `Các chỉ số đã ghi ngày ${formatDate(d)} sẽ bị xóa.`,
+      confirmLabel: 'Xóa',
+      danger: true,
+    })
+    if (!ok) return
+    const result = await dispatch(removeLog(d))
+    if (removeLog.fulfilled.match(result)) toast({ title: 'Đã xóa nhật ký', tone: 'info' })
   }
   const analyze = () =>
     void dispatch(analyzeLogs({ days: 30, location: weather.query ?? undefined }))

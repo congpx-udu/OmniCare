@@ -5,6 +5,7 @@ import type { ChatSendExtra } from '@/components/chat/ChatInput'
 import { Alert, IconButton, MedicalDisclaimer } from '@/components/common'
 import { NavIcon } from '@/components/layout'
 import { CHAT_GREETING, CHAT_MODES, EMERGENCY_HOTLINE } from '@/constants'
+import { useFeedback } from '@/hooks/useFeedback'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { clearChatError, clearThread, fetchHistory, sendChat } from '@/redux/slices/chatSlice'
 import { fetchProfile } from '@/redux/slices/profileSlice'
@@ -25,6 +26,7 @@ const FOOD_PREFILL = 'Hôm nay nên ăn gì cho hợp thời tiết và thể tr
  */
 export function ChatPage() {
   const dispatch = useAppDispatch()
+  const { toast, confirm: ask } = useFeedback()
   const [params, setParams] = useSearchParams()
   const thread = useAppSelector((s) => s.chat.threads[MODE])
   const weather = useAppSelector((s) => s.weather)
@@ -92,8 +94,17 @@ export function ChatPage() {
     [dispatch, weather.query],
   )
 
-  const clear = () => {
-    if (window.confirm('Xóa toàn bộ lịch sử trò chuyện?')) void dispatch(clearThread(MODE))
+  const clear = async () => {
+    const ok = await ask({
+      title: 'Xóa toàn bộ lịch sử trò chuyện?',
+      description: 'Tin nhắn và ảnh đã gửi sẽ bị xóa, AI sẽ không nhớ những gì bạn đã kể.',
+      confirmLabel: 'Xóa lịch sử',
+      danger: true,
+    })
+    if (!ok) return
+    const result = await dispatch(clearThread(MODE))
+    if (clearThread.fulfilled.match(result))
+      toast({ title: 'Đã xóa lịch sử trò chuyện', tone: 'info' })
   }
 
   const history = useMemo(

@@ -1,4 +1,5 @@
 import { IconButton } from '@/components/common'
+import { useFeedback } from '@/hooks/useFeedback'
 import { NavIcon } from '@/components/layout'
 import type { MedicationTable as MedicationTableData } from '@/types'
 
@@ -31,6 +32,7 @@ function slug(label: string, used: Set<string>) {
  */
 export function MedicationTable({ value, onChange, disabled }: MedicationTableProps) {
   const { columns, rows } = value
+  const { confirm: ask } = useFeedback()
 
   const setCell = (ri: number, key: string, v: string) => {
     onChange({
@@ -51,8 +53,14 @@ export function MedicationTable({ value, onChange, disabled }: MedicationTablePr
       rows: rows.map((r) => ({ ...r, [key]: null })),
     })
   }
-  const removeColumn = (key: string) => {
-    if (!window.confirm('Xóa cột này và toàn bộ dữ liệu trong cột?')) return
+  const removeColumn = async (key: string) => {
+    const ok = await ask({
+      title: 'Xóa cột này?',
+      description: 'Toàn bộ dữ liệu trong cột sẽ bị bỏ.',
+      confirmLabel: 'Xóa cột',
+      danger: true,
+    })
+    if (!ok) return
     onChange({
       columns: columns.filter((c) => c.key !== key),
       rows: rows.map((r) => {

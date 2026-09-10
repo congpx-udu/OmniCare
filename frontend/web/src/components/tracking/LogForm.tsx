@@ -1,5 +1,5 @@
 import { useId, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Button, IconButton, SectionCard, Tooltip } from '@/components/common'
+import { Button, DatePicker, IconButton, SectionCard, Tooltip } from '@/components/common'
 import { NavIcon, type NavIconName } from '@/components/layout'
 import { ACTIVITY_ICONS, ACTIVITY_LABELS, MOOD_LABELS } from '@/constants'
 import type { UpsertLogPayload } from '@/services/trackingService'
@@ -145,16 +145,17 @@ export function LogForm({ date, onDateChange, existing, saving, onSave }: LogFor
       title={existing ? 'Sửa nhật ký' : 'Ghi nhật ký'}
       id="log-form"
       actions={
-        <input
-          type="date"
-          max={today}
+        <DatePicker
+          label="Ngày ghi nhật ký"
+          hideLabel
           value={date}
-          aria-label="Ngày ghi nhật ký"
-          onChange={(e) => {
+          max={today}
+          className="w-52"
+          onChange={(d) => {
+            if (!d) return
             setForm(null)
-            onDateChange(e.target.value)
+            onDateChange(d)
           }}
-          className="bg-surface focus:border-tertiary h-10 rounded-xl border border-neutral-200 px-3 text-sm focus:outline-none"
         />
       }
     >

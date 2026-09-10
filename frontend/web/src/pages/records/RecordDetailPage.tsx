@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Alert,
+  DatePicker,
   Button,
   IconButton,
   Input,
@@ -14,6 +15,7 @@ import { NavIcon } from '@/components/layout'
 import { MedicationTable, StatusBadge } from '@/components/records'
 import { RECORD_TYPE_LABELS, ROUTES } from '@/constants'
 import { useRecordImage } from '@/hooks/useRecordImage'
+import { useFeedback } from '@/hooks/useFeedback'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import {
   clearCurrentRecord,
@@ -55,6 +57,7 @@ const textarea =
 export function RecordDetailPage() {
   const { id = '' } = useParams()
   const dispatch = useAppDispatch()
+  const { toast, confirm: ask } = useFeedback()
   const navigate = useNavigate()
   const { current, currentStatus, currentError, saving, saveError } = useAppSelector(
     (s) => s.records,
@@ -109,19 +112,42 @@ export function RecordDetailPage() {
     if (updateRecord.fulfilled.match(result)) {
       setForm(null)
       setSaved(true)
+      toast({
+        title: confirm ? 'Đã xác nhận và lưu bệnh án' : 'Đã lưu thay đổi',
+        tone: 'success',
+      })
+    } else {
+      toast({ title: 'Lưu thất bại', description: String(result.payload ?? ''), tone: 'error' })
     }
   }
 
   const reprocess = async () => {
-    if (!window.confirm('Đọc lại ảnh bằng AI? Dữ liệu đã sửa tay sẽ bị thay thế.')) return
+    const ok = await ask({
+      title: 'Đọc lại ảnh bằng AI?',
+      description: 'Dữ liệu bạn đã sửa tay sẽ bị thay bằng kết quả đọc mới.',
+      confirmLabel: 'Đọc lại',
+    })
+    if (!ok) return
     const result = await dispatch(reprocessRecord(id))
-    if (reprocessRecord.fulfilled.match(result)) setForm(null)
+    if (reprocessRecord.fulfilled.match(result)) {
+      setForm(null)
+      toast({ title: 'Đã đọc lại bằng AI', tone: 'success' })
+    }
   }
 
   const remove = async () => {
-    if (!window.confirm('Xóa hồ sơ này và ảnh gốc? Không thể hoàn tác.')) return
+    const ok = await ask({
+      title: 'Xóa hồ sơ này?',
+      description: 'Ảnh gốc và dữ liệu đã bóc tách sẽ bị xóa vĩnh viễn.',
+      confirmLabel: 'Xóa',
+      danger: true,
+    })
+    if (!ok) return
     const result = await dispatch(deleteRecord(id))
-    if (deleteRecord.fulfilled.match(result)) navigate(ROUTES.RECORDS, { replace: true })
+    if (deleteRecord.fulfilled.match(result)) {
+      toast({ title: 'Đã xóa hồ sơ', tone: 'info' })
+      navigate(ROUTES.RECORDS, { replace: true })
+    }
   }
 
   const back = () => navigate(ROUTES.RECORDS)
@@ -308,12 +334,12 @@ export function RecordDetailPage() {
                   onChange={onChange}
                 />
                 <Input label="Bác sĩ" name="doctor" value={current_.doctor} onChange={onChange} />
-                <Input
+                <DatePicker
                   label="Ngày khám"
-                  name="visitDate"
-                  type="date"
                   value={current_.visitDate}
-                  onChange={onChange}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(visitDate) => patch({ visitDate })}
+                  clearable
                 />
               </div>
               <div className="space-y-1.5">
