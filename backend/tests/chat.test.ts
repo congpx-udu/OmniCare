@@ -47,6 +47,31 @@ describe('chat', () => {
     expect(after.body.data).toHaveLength(0)
   })
 
+  it('luồng health: một lịch sử, AI trả intent theo từng lượt, có cả khối triệu chứng lẫn món ăn', async () => {
+    const { app, token } = await registerAndLogin()
+    const sym = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'health', message: 'Tôi đau bụng' })
+      .expect(201)
+    expect(sym.body.data.assistantMessage.meta.intent).toBe('symptom')
+    expect(sym.body.data.assistantMessage.meta.riskLevel).toBe('home')
+
+    const food = await request(app)
+      .post('/api/chat')
+      .set(auth(token))
+      .send({ mode: 'health', message: 'Vậy tối nay ăn gì?', pantry: ['gạo'] })
+      .expect(201)
+    expect(food.body.data.assistantMessage.meta.intent).toBe('food')
+    expect(food.body.data.assistantMessage.meta.meals[0].name).toBe('Cháo gà')
+
+    const history = await request(app)
+      .get('/api/chat/history?mode=health')
+      .set(auth(token))
+      .expect(200)
+    expect(history.body.data).toHaveLength(4)
+  })
+
   it('validate mode và message; user khác không thấy lịch sử', async () => {
     const a = await registerAndLogin('A')
     const b = await registerAndLogin('B')

@@ -31,16 +31,19 @@ function startMockAi() {
         if (req.url === '/health') return json({ status: 'ok', llm_configured: true })
         if (req.url === '/chat') {
           const mode = payload.mode as string
+          const msgs = payload.messages as Array<{ content: string }>
+          const askFood = mode === 'food' || (mode === 'health' && /ăn/i.test(msgs.at(-1)?.content ?? ''))
           return json({
             mode,
-            reply: mode === 'food' ? 'Gợi ý bữa tối nhẹ.' : 'Bạn nên theo dõi tại nhà.',
-            risk_level: mode === 'food' ? 'none' : 'home',
-            possible_conditions: mode === 'food' ? [] : [{ name: 'Căng thẳng', why: 'ngủ ít' }],
-            suggested_specialty: mode === 'food' ? null : 'Nội tổng quát',
+            intent: mode === 'health' ? (askFood ? 'food' : 'symptom') : 'general',
+            reply: askFood ? 'Gợi ý bữa tối nhẹ.' : 'Bạn nên theo dõi tại nhà.',
+            risk_level: askFood ? 'none' : 'home',
+            possible_conditions: askFood ? [] : [{ name: 'Căng thẳng', why: 'ngủ ít' }],
+            suggested_specialty: askFood ? null : 'Nội tổng quát',
             facility_type: null,
             follow_up_questions: ['Bạn có sốt không?'],
             meals:
-              mode === 'food'
+              askFood
                 ? [{ name: 'Cháo gà', why: 'nhẹ', ingredients: ['gà'], notes: null }]
                 : [],
             activities: [],

@@ -26,8 +26,9 @@ const mealSchema = z.object({
 const conditionSchema = z.object({ name: z.string(), why: z.string() })
 
 const aiResponseSchema = z.object({
-  mode: z.enum(['food', 'symptom']),
+  mode: z.enum(['food', 'symptom', 'health']),
   reply: z.string().min(1),
+  intent: z.enum(['symptom', 'food', 'general']).default('general'),
   risk_level: z.enum(['none', 'home', 'doctor', 'emergency']).default('none'),
   possible_conditions: z.array(conditionSchema).default([]),
   suggested_specialty: z.string().nullable().default(null),
@@ -44,6 +45,8 @@ type AiResponse = z.infer<typeof aiResponseSchema>
 
 /** Phần có cấu trúc lưu vào ChatMessage.meta và trả cho client */
 export interface AssistantMeta {
+  /** Luồng health: lượt này AI hiểu người dùng hỏi gì */
+  intent: AiResponse['intent']
   riskLevel: AiResponse['risk_level']
   possibleConditions: AiResponse['possible_conditions']
   suggestedSpecialty: string | null
@@ -141,7 +144,7 @@ export async function sendMessage(userId: string, input: SendChatInput) {
 
   const history = recent.reverse().map((m) => ({ role: m.role, content: m.content }))
   // Tủ bếp chỉ có ý nghĩa với luồng food; bỏ trùng, giữ nguyên thứ tự nhập
-  const pantry = input.mode === 'food' ? [...new Set(input.pantry ?? [])] : []
+  const pantry = input.mode !== 'symptom' ? [...new Set(input.pantry ?? [])] : []
 
   const aiPayload = {
     mode: input.mode,
@@ -166,6 +169,7 @@ export async function sendMessage(userId: string, input: SendChatInput) {
   const ai = await callAi(aiPayload)
 
   const meta: AssistantMeta = {
+    intent: ai.intent,
     riskLevel: ai.risk_level,
     possibleConditions: ai.possible_conditions,
     suggestedSpecialty: ai.suggested_specialty,

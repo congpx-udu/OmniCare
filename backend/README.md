@@ -152,7 +152,7 @@ Base URL: `/api`. Route có 🔒 cần header `Authorization: Bearer <token>`.
 | POST | `/auth/register` | ⏱ 5/giờ/IP (prod). Đăng ký `{ fullName, phone, password, email? }` → `{ user }` (không trả token, client chuyển về trang đăng nhập) | ✅ |
 | POST | `/auth/login` | ⏱ 10/15 phút/IP (prod). Đăng nhập `{ phone, password }` → `{ token, user }`. `phone` nhận `0xxxxxxxxx` hoặc `+84xxxxxxxxx` | ✅ |
 | GET 🔒 | `/auth/me` | Thông tin người dùng hiện tại | ✅ |
-| POST 🔒 | `/chat` | ⏱ 30/15 phút/IP (prod). `{ mode: food\|symptom, message, feeling?, location?: {lat,lon}\|{city}, pantry?: string[] (≤30, chỉ food: nguyên liệu đang có, không lưu riêng) }` → `{ userMessage, assistantMessage (meta: riskLevel, meals, possibleConditions...), disclaimer }`. Gom hồ sơ ẩn danh + thời tiết + 10 tin gần nhất gửi AI | ✅ |
+| POST 🔒 | `/chat` | ⏱ 30/15 phút/IP (prod). `{ mode: health\|food\|symptom, message, feeling?, location?: {lat,lon}\|{city}, pantry?: string[] (≤30, nguyên liệu đang có, không lưu riêng) }` → `{ userMessage, assistantMessage (meta: intent, riskLevel, meals, possibleConditions...), disclaimer }`. `health` là luồng hợp nhất (frontend dùng): một cuộc trò chuyện hỏi được cả triệu chứng lẫn món ăn, AI trả `intent` từng lượt; `food`/`symptom` giữ cho lịch sử cũ. Gom hồ sơ ẩn danh + thời tiết + 10 tin gần nhất gửi AI | ✅ |
 | GET 🔒 | `/chat/history?mode=&limit=` | Lịch sử một luồng, cũ → mới | ✅ |
 | DELETE 🔒 | `/chat/history?mode=` | Xóa lịch sử một luồng | ✅ |
 | POST 🔒 | `/records/upload` | ⏱ 20/giờ/IP (prod). multipart `images[]` (1–8 trang cùng bộ hồ sơ, mỗi ảnh JPEG/PNG/WEBP ≤10MB) + `type?`. Lưu ảnh, gọi AI `/ocr` một lần cho tất cả trang và gộp thành một kết quả, trả record `status: needs_review` (hoặc `failed` kèm `errorMessage`) | ✅ |

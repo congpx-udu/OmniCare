@@ -1,6 +1,7 @@
 import { Schema, model, type InferSchemaType } from 'mongoose'
 
-export const CHAT_MODES = ['food', 'symptom'] as const
+// 'health': luồng hợp nhất (một cuộc trò chuyện hỏi cả triệu chứng lẫn món ăn); food/symptom giữ cho lịch sử cũ
+export const CHAT_MODES = ['food', 'symptom', 'health'] as const
 export type ChatMode = (typeof CHAT_MODES)[number]
 
 const chatMessageSchema = new Schema(

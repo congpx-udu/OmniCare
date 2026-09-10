@@ -10,8 +10,22 @@ export interface ChatModeConfig {
   starters: readonly string[]
 }
 
-/** Hai luồng trong một khung chat (SITEMAP 3.5) */
+/** Luồng hợp nhất 'health' là luồng duy nhất hiển thị; food/symptom giữ cấu hình cho lịch sử cũ */
 export const CHAT_MODES: readonly ChatModeConfig[] = [
+  {
+    mode: 'health',
+    label: 'Trợ lý sức khỏe AI',
+    title: 'Trợ lý sức khỏe AI',
+    description: 'Dự đoán triệu chứng · cảnh báo · gợi ý chuyên gia · món ăn hợp thể trạng',
+    placeholder: 'Mô tả triệu chứng hoặc hỏi hôm nay nên ăn gì...',
+    starters: [
+      'Tôi bị sốt và ho 2 ngày nay',
+      'Dạo này tôi mất ngủ, hay căng thẳng',
+      'Tôi thấy đau đầu và chóng mặt',
+      'Tôi bị đau bụng, buồn nôn từ tối qua',
+      'Hôm nay nên ăn gì cho hợp thời tiết?',
+    ],
+  },
   {
     mode: 'symptom',
     label: 'Cảm nhận cơ thể',
@@ -86,3 +100,7 @@ export const RISK_LABELS: Record<
 }
 
 export const EMERGENCY_HOTLINE = '115'
+
+/** Lời chào mở đầu khung chat hợp nhất (chưa có lịch sử) */
+export const CHAT_GREETING =
+  'Xin chào! Mình là trợ lý sức khỏe OmniCare. Hãy mô tả triệu chứng bạn đang gặp — mình sẽ đưa ra dự đoán sơ bộ, cảnh báo và gợi ý chuyên khoa phù hợp. Bạn cũng có thể hỏi hôm nay nên ăn gì, mình sẽ gợi ý theo thời tiết, thể trạng và những gì bạn vừa kể.'

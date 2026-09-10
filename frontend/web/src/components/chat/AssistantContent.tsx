@@ -20,6 +20,9 @@ const TONE_CLASS = {
 export function AssistantContent({ mode, content, meta, onFollowUp }: AssistantContentProps) {
   const risk = meta ? RISK_LABELS[meta.riskLevel] : null
   const isEmergency = meta?.riskLevel === 'emergency'
+  // Khối triệu chứng khi có đánh giá mức độ; khối món ăn khi có món — không phụ thuộc luồng
+  const showSymptom = mode !== 'food' && meta !== null && meta.riskLevel !== 'none' && risk !== null
+  const showFood = mode !== 'symptom' && meta !== null && meta.meals.length > 0
 
   return (
     <div className="space-y-3">
@@ -44,7 +47,7 @@ export function AssistantContent({ mode, content, meta, onFollowUp }: AssistantC
 
       <p className="whitespace-pre-wrap">{content}</p>
 
-      {mode === 'symptom' && meta && meta.riskLevel !== 'none' && risk && (
+      {showSymptom && meta && risk && (
         <div
           className={cn('space-y-2 rounded-lg border px-3.5 py-3 text-sm', TONE_CLASS[risk.tone])}
         >
@@ -80,7 +83,7 @@ export function AssistantContent({ mode, content, meta, onFollowUp }: AssistantC
         </div>
       )}
 
-      {mode === 'food' && meta && meta.meals.length > 0 && (
+      {showFood && meta && (
         <div className="grid gap-2 sm:grid-cols-2">
           {meta.meals.map((m) => (
             <div key={m.name} className="rounded-card bg-surface border border-neutral-200 p-3.5">
@@ -102,7 +105,7 @@ export function AssistantContent({ mode, content, meta, onFollowUp }: AssistantC
         </div>
       )}
 
-      {mode === 'food' && meta && meta.activities.length > 0 && (
+      {mode !== 'symptom' && meta && meta.activities.length > 0 && (
         <p className="text-sm text-neutral-700">
           <span className="font-semibold">Vận động gợi ý:</span> {meta.activities.join(' · ')}
         </p>

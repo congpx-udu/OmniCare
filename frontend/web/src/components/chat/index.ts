@@ -1,5 +1,4 @@
 export { AssistantContent } from './AssistantContent'
 export { ChatInput } from './ChatInput'
-export { ContextBar } from './ContextBar'
 export { MessageBubble } from './MessageBubble'
-export { ModeSwitch } from './ModeSwitch'
+export { AssistantAvatar } from './AssistantAvatar'

@@ -20,10 +20,13 @@ def _normalize(mode: str, raw: dict) -> dict:
     if not out["reply"]:
         raise LLMError("LLM không trả về nội dung trả lời")
     out["follow_up_questions"] = [str(q) for q in raw.get("follow_up_questions") or []][:3]
-    if mode == "food":
+    if mode == "health":
+        intent = raw.get("intent")
+        out["intent"] = intent if intent in ("symptom", "food", "general") else "general"
+    if mode in ("food", "health"):
         out["meals"] = [m for m in raw.get("meals") or [] if isinstance(m, dict)][:4]
         out["activities"] = [str(a) for a in raw.get("activities") or []][:3]
-    else:
+    if mode in ("symptom", "health"):
         level = raw.get("risk_level")
         out["risk_level"] = level if level in ("none", "home", "doctor", "emergency") else "none"
         out["possible_conditions"] = [

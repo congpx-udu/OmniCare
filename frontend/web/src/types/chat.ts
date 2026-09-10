@@ -1,4 +1,6 @@
-export type ChatMode = 'food' | 'symptom'
+/** 'health': luồng hợp nhất đang dùng; food/symptom chỉ còn trong lịch sử cũ */
+export type ChatMode = 'health' | 'food' | 'symptom'
+export type ChatIntent = 'symptom' | 'food' | 'general'
 export type RiskLevel = 'none' | 'home' | 'doctor' | 'emergency'
 
 export interface MealSuggestion {
@@ -17,6 +19,8 @@ export interface PossibleCondition {
 
 /** Dữ liệu có cấu trúc kèm tin của trợ lý (backend lưu trong ChatMessage.meta) */
 export interface AssistantMeta {
+  /** Luồng health: lượt này AI hiểu người dùng hỏi gì (tin cũ không có) */
+  intent?: ChatIntent
   riskLevel: RiskLevel
   possibleConditions: PossibleCondition[]
   suggestedSpecialty: string | null

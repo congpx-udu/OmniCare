@@ -4,7 +4,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-ChatMode = Literal["food", "symptom"]
+# "health": luồng hợp nhất — một cuộc trò chuyện hỏi được cả triệu chứng lẫn món ăn
+ChatMode = Literal["food", "symptom", "health"]
+Intent = Literal["symptom", "food", "general"]
 RiskLevel = Literal["none", "home", "doctor", "emergency"]
 
 
@@ -67,6 +69,8 @@ class PossibleCondition(BaseModel):
 class ChatResponse(BaseModel):
     mode: ChatMode
     reply: str
+    # Luồng health: ý định của lượt này (để frontend hiện khối phù hợp)
+    intent: Intent = "general"
     # Luồng symptom
     risk_level: RiskLevel = "none"
     possible_conditions: list[PossibleCondition] = Field(default_factory=list)

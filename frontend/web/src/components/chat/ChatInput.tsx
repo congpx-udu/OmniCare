@@ -1,5 +1,4 @@
-import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { Button } from '@/components/common'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { TagInput } from '@/components/health-profile'
 import { PANTRY_SUGGESTIONS, SYMPTOM_CHIPS } from '@/constants'
 import type { ChatMode } from '@/types'
@@ -49,6 +48,11 @@ export function ChatInput({
     setText(prefill.text)
   }
 
+  // Sau khi điền sẵn, đưa con trỏ vào ô nhập để Enter gửi được ngay
+  useEffect(() => {
+    if (prefill) textareaRef.current?.focus()
+  }, [prefill])
+
   const submit = () => {
     const value = text.trim()
     if (!value || disabled || sending) return
@@ -81,8 +85,9 @@ export function ChatInput({
     textareaRef.current?.focus()
   }
 
-  const showPantry = mode === 'food' && pantryOpen
-  const showPantrySummary = mode === 'food' && !pantryOpen && pantry.length > 0
+  const foodish = mode !== 'symptom'
+  const showPantry = foodish && pantryOpen
+  const showPantrySummary = foodish && !pantryOpen && pantry.length > 0
 
   return (
     <form onSubmit={onSubmit} className="space-y-2">
@@ -125,7 +130,7 @@ export function ChatInput({
         </div>
       )}
 
-      {mode === 'food' && !showPantry && !showPantrySummary && (
+      {foodish && !showPantry && !showPantrySummary && (
         <button
           type="button"
           disabled={disabled}
@@ -168,25 +173,44 @@ export function ChatInput({
         </div>
       )}
 
-      <div className="bg-surface focus-within:border-tertiary focus-within:ring-tertiary/40 flex items-end gap-2 rounded-xl border border-neutral-300 p-2 transition focus-within:ring-2">
+      <div className="bg-surface focus-within:border-secondary focus-within:ring-secondary/25 flex items-end gap-2 rounded-2xl border border-neutral-200 p-2 pl-3 shadow-sm transition focus-within:ring-2">
         <textarea
           ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={
-            mode === 'food' && pantry.length
-              ? 'Ví dụ: Bữa tối nay nấu gì từ những thứ này?'
-              : placeholder
+            foodish && pantry.length ? 'Ví dụ: Bữa tối nay nấu gì từ những thứ này?' : placeholder
           }
-          rows={2}
+          rows={1}
           disabled={disabled}
           aria-label="Nội dung tin nhắn"
-          className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
+          className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
         />
-        <Button type="submit" loading={sending} disabled={disabled || !text.trim()}>
-          Gửi
-        </Button>
+        <button
+          type="submit"
+          disabled={disabled || sending || !text.trim()}
+          aria-label="Gửi"
+          className="bg-secondary-100 text-secondary hover:bg-secondary-200 flex size-10 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-50"
+        >
+          {sending ? (
+            <span className="border-secondary size-4 animate-spin rounded-full border-2 border-t-transparent" />
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              className="size-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M22 2 11 13" />
+              <path d="M22 2 15 22l-4-9-9-4z" />
+            </svg>
+          )}
+        </button>
       </div>
       {mode === 'symptom' && (
         <input
@@ -199,12 +223,11 @@ export function ChatInput({
           className="bg-surface focus:border-tertiary w-full rounded-lg border border-neutral-200 px-3 py-1.5 text-xs text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
         />
       )}
-      <p className="text-[11px] text-neutral-400">
-        Enter để gửi, Shift+Enter để xuống dòng.
-        {mode === 'food' &&
-          pantry.length > 0 &&
-          ` Đang gợi ý theo ${pantry.length} nguyên liệu trong tủ bếp.`}
-      </p>
+      {foodish && pantry.length > 0 && (
+        <p className="text-[11px] text-neutral-400">
+          Đang gợi ý theo {pantry.length} nguyên liệu trong tủ bếp.
+        </p>
+      )}
     </form>
   )
 }
