@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Alert, EmptyState, IconButton, MedicalDisclaimer, SectionCard } from '@/components/common'
 import {
@@ -13,6 +13,7 @@ import { RecordCard } from '@/components/records'
 import { WeatherInsightCard } from '@/components/weather'
 import { BMI_LABELS, ROUTES } from '@/constants'
 import { useAuth } from '@/hooks/useAuth'
+import { useGeolocation } from '@/hooks/useGeolocation'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
 import { fetchProfile } from '@/redux/slices/profileSlice'
 import { fetchRecords } from '@/redux/slices/recordsSlice'
@@ -50,17 +51,29 @@ export function DashboardPage() {
   const weather = useAppSelector((s) => s.weather)
   const records = useAppSelector((s) => s.records)
   const tracking = useAppSelector((s) => s.tracking)
+  const geo = useGeolocation()
+  const askedGeo = useRef(false)
 
   useEffect(() => {
     if (status === 'idle') void dispatch(fetchProfile())
   }, [dispatch, status])
 
-  // Có vị trí nhớ trong phiên thì tải thời tiết, sau đó hỏi AI "ảnh hưởng đến bạn"
+  const locate = useCallback(() => {
+    geo.request((c) => void dispatch(fetchWeather({ lat: c.lat, lon: c.lng })))
+  }, [geo, dispatch])
+
+  // Có vị trí nhớ trong phiên thì tải thời tiết ngay; mới đăng nhập (chưa có vị trí) thì tự xin
+  // định vị luôn ở đây, không đợi người dùng mở trang Thời tiết
   useEffect(() => {
     if (weather.query && !weather.data && weather.status === 'idle') {
       void dispatch(fetchWeather(weather.query))
+      return
     }
-  }, [dispatch, weather.query, weather.data, weather.status])
+    if (!weather.query && !askedGeo.current) {
+      askedGeo.current = true
+      locate()
+    }
+  }, [dispatch, weather.query, weather.data, weather.status, locate])
 
   useEffect(() => {
     if (weather.data && weather.query && weather.insightStatus === 'idle') {
@@ -103,7 +116,7 @@ export function DashboardPage() {
       <HeroBanner
         name={user?.fullName ?? 'bạn'}
         weather={weather.data}
-        weatherLoading={weather.status === 'loading'}
+        weatherLoading={weather.status === 'loading' || geo.loading}
       />
 
       {needsProfile && (
@@ -170,9 +183,9 @@ export function DashboardPage() {
 
         {/* Cột phải: AI hôm nay */}
         {/* Ở xl: cột phải cao đúng bằng cột trái, nội dung dư cuộn bên trong thẻ */}
-        {weather.data && (
-          <div className="relative xl:col-span-4">
-            <div className="xl:absolute xl:inset-0">
+        <div className="relative xl:col-span-4">
+          <div className="xl:absolute xl:inset-0">
+            {weather.data ? (
               <WeatherInsightCard
                 insight={weather.insight}
                 status={weather.insightStatus}
@@ -180,9 +193,21 @@ export function DashboardPage() {
                 onRetry={retryInsight}
                 compact
               />
-            </div>
+            ) : (
+              // Chưa có thời tiết: đang định vị/tải thì hiện skeleton có sẵn trong thẻ,
+              // bị từ chối định vị thì hiện lại nút "Thử lại" để bấm định vị thủ công
+              <WeatherInsightCard
+                insight={null}
+                status={weather.status === 'loading' || geo.loading ? 'loading' : 'failed'}
+                error={
+                  weather.error ?? geo.error ?? 'Chưa có vị trí để phân tích thời tiết hôm nay.'
+                }
+                onRetry={locate}
+                compact
+              />
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
