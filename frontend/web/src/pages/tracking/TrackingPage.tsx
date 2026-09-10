@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Alert, IconButton, MedicalDisclaimer, PageHeader, SectionCard } from '@/components/common'
+import { Alert, IconButton, MedicalDisclaimer, PageBanner, SectionCard } from '@/components/common'
 import { AdviceCard, LogForm, LogHistory, TrendChart } from '@/components/tracking'
 import { METRICS, type MetricKey } from '@/constants'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
@@ -65,7 +65,7 @@ export function TrackingPage() {
 
   return (
     <section className="space-y-5">
-      <PageHeader
+      <PageBanner
         icon="activity"
         title="Theo dõi sức khỏe"
         subtitle={
@@ -75,11 +75,16 @@ export function TrackingPage() {
         }
         actions={
           <>
-            <IconButton icon="plus" label="Ghi hôm nay" onClick={() => pick(today())} />
+            <IconButton
+              icon="plus"
+              label="Ghi hôm nay"
+              variant="glass"
+              onClick={() => pick(today())}
+            />
             <IconButton
               icon="sparkles"
               label="Nhờ AI phân tích"
-              variant="primary"
+              variant="glass"
               loading={analyzing}
               disabled={logs.length === 0}
               onClick={analyze}

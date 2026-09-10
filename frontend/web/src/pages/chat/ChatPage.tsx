@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AssistantAvatar, ChatInput, MessageBubble } from '@/components/chat'
 import type { ChatSendExtra } from '@/components/chat/ChatInput'
-import { Alert, IconButton, MedicalDisclaimer } from '@/components/common'
+import { Alert, IconButton, MedicalDisclaimer, PageBanner } from '@/components/common'
 import { NavIcon } from '@/components/layout'
 import { CHAT_GREETING, CHAT_MODES, EMERGENCY_HOTLINE } from '@/constants'
 import { useAppDispatch, useAppSelector } from '@/redux/hooks'
@@ -86,14 +86,17 @@ export function ChatPage() {
 
   return (
     <section className="flex h-[calc(100vh-7rem)] min-h-[32rem] flex-col lg:h-[calc(100vh-4rem)]">
-      <header className="flex items-center gap-3 border-b border-neutral-200 pb-4">
-        <AssistantAvatar className="size-10" />
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl">{config.title}</h1>
-          <p className="truncate text-sm text-neutral-500">{config.description}</p>
-        </div>
-        {!empty && <IconButton icon="trash" label="Xóa lịch sử" variant="danger" onClick={clear} />}
-      </header>
+      <PageBanner
+        icon="chat"
+        title={config.title}
+        subtitle={config.description}
+        className="rounded-[1.25rem] p-5 sm:p-5"
+        actions={
+          !empty ? (
+            <IconButton icon="trash" label="Xóa lịch sử" variant="glass" onClick={clear} />
+          ) : undefined
+        }
+      />
 
       <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto py-4" aria-live="polite">
         {loadingHistory && (

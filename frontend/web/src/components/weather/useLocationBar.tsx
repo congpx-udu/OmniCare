@@ -12,6 +12,8 @@ interface LocationBarProps {
   geoError?: string | null
   /** Mở sẵn ô nhập thành phố (khi chưa có vị trí) */
   defaultOpen?: boolean
+  /** Nút đặt trên nền tối (banner): dùng kính mờ trắng */
+  onDark?: boolean
 }
 
 /**
@@ -25,6 +27,7 @@ export function useLocationBar({
   locating = false,
   geoError,
   defaultOpen = false,
+  onDark = false,
 }: LocationBarProps) {
   const [open, setOpen] = useState(defaultOpen)
   const [city, setCity] = useState('')
@@ -48,14 +51,14 @@ export function useLocationBar({
       <IconButton
         icon="pencil"
         label="Đổi vị trí"
-        variant="outline"
+        variant={onDark ? 'glass' : 'outline'}
         active={open}
         onClick={() => setOpen((v) => !v)}
       />
       <IconButton
         icon="target"
         label="Định vị lại"
-        variant="soft"
+        variant={onDark ? 'glass' : 'soft'}
         loading={locating}
         disabled={loading}
         onClick={onLocate}

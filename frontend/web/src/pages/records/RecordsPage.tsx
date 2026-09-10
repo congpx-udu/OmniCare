@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert, EmptyState, IconButton, MedicalDisclaimer, PageHeader } from '@/components/common'
+import { Alert, EmptyState, IconButton, MedicalDisclaimer, PageBanner } from '@/components/common'
 import { NavIcon } from '@/components/layout'
 import { RecordCard, UploadDropzone } from '@/components/records'
 import { ROUTES } from '@/constants'
@@ -55,16 +55,17 @@ export function RecordsPage() {
 
   return (
     <section className="space-y-5">
-      <PageHeader
+      <PageBanner
         icon="clipboard"
         title="Hồ sơ bệnh án"
-        subtitle={`${items.length} bệnh án`}
+        subtitle={`${items.length} bệnh án · AI đọc đơn thuốc, phiếu khám in máy`}
         actions={
           <>
             {years.length > 0 && (
               <IconButton
                 icon="filter"
                 label="Lọc theo năm"
+                variant="glass"
                 active={showFilter || filtering}
                 onClick={() => setShowFilter((v) => !v)}
               />
@@ -72,7 +73,7 @@ export function RecordsPage() {
             <IconButton
               icon={uploadOpen && items.length > 0 ? 'close' : 'upload'}
               label={uploadOpen && items.length > 0 ? 'Đóng khung tải' : 'Tải bệnh án'}
-              variant="primary"
+              variant="glass"
               active={uploadOpen && items.length > 0}
               onClick={() => setShowUpload((v) => !v)}
               disabled={items.length === 0}

@@ -7,7 +7,8 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   icon: NavIconName
   /** Tên chức năng: dùng làm aria-label và tooltip khi hover/focus */
   label: string
-  variant?: 'soft' | 'primary' | 'ghost' | 'danger' | 'outline'
+  /** glass: dùng trên nền tối (banner) */
+  variant?: 'soft' | 'primary' | 'ghost' | 'danger' | 'outline' | 'glass'
   size?: 'sm' | 'md' | 'lg'
   /** Trạng thái đang bật (ví dụ bộ lọc đang mở) */
   active?: boolean
@@ -62,6 +63,10 @@ export function IconButton({
               ? 'border-secondary bg-secondary border text-white'
               : 'bg-surface hover:border-secondary hover:text-secondary border border-neutral-200 text-neutral-600'),
           variant === 'danger' && 'bg-danger/10 text-danger hover:bg-danger/20',
+          variant === 'glass' &&
+            (active
+              ? 'text-primary bg-white shadow-sm'
+              : 'border border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20'),
           className,
         )}
         {...props}

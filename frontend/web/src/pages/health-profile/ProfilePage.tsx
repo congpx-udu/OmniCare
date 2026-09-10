@@ -4,7 +4,7 @@ import {
   IconButton,
   Input,
   MedicalDisclaimer,
-  PageHeader,
+  PageBanner,
   SectionCard,
 } from '@/components/common'
 import { ProfileSummary, TagInput } from '@/components/health-profile'
@@ -121,9 +121,10 @@ export function ProfilePage() {
 
   return (
     <section className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
+      <PageBanner
         icon="profile"
         title={profile?.fullName || 'Hồ sơ cá nhân'}
+        kicker="Hồ sơ cá nhân"
         subtitle={profile?.phone}
         actions={
           <>
@@ -131,7 +132,7 @@ export function ProfilePage() {
               <IconButton
                 icon="close"
                 label="Hủy thay đổi"
-                variant="ghost"
+                variant="glass"
                 onClick={() => {
                   setForm(null)
                   setFieldErrors({})
@@ -141,7 +142,8 @@ export function ProfilePage() {
             <IconButton
               icon="save"
               label="Lưu hồ sơ"
-              variant="primary"
+              variant="glass"
+              active={dirty}
               type="submit"
               form={FORM_ID}
               loading={saveStatus === 'loading'}

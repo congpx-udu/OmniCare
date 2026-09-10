@@ -6,6 +6,7 @@ import {
   IconButton,
   Input,
   MedicalDisclaimer,
+  PageBanner,
   PageHeader,
   SectionCard,
 } from '@/components/common'
@@ -161,38 +162,38 @@ export function RecordDetailPage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex items-start gap-3">
-        <IconButton
-          icon="chevron-left"
-          label="Quay lại danh sách"
-          variant="outline"
-          onClick={back}
-          className="mt-0.5"
-        />
-        <PageHeader
-          icon="clipboard"
-          title="Chi tiết bệnh án"
-          subtitle={[record.diagnosis, subtitle].filter(Boolean).join(' · ')}
-          className="min-w-0 flex-1"
-          actions={
-            <>
-              <IconButton
-                icon="sparkles"
-                label="Đọc lại bằng AI"
-                onClick={reprocess}
-                disabled={saving}
-              />
-              <IconButton
-                icon="trash"
-                label="Xóa hồ sơ"
-                variant="danger"
-                onClick={remove}
-                disabled={saving}
-              />
-            </>
-          }
-        />
-      </div>
+      <PageBanner
+        icon="clipboard"
+        title="Chi tiết bệnh án"
+        subtitle={[record.diagnosis, subtitle].filter(Boolean).join(' · ')}
+        leading={
+          <IconButton
+            icon="chevron-left"
+            label="Quay lại danh sách"
+            variant="glass"
+            onClick={back}
+          />
+        }
+        actions={
+          <>
+            <IconButton
+              icon="sparkles"
+              label="Đọc lại bằng AI"
+              variant="glass"
+              onClick={reprocess}
+              disabled={saving}
+            />
+            <IconButton
+              icon="trash"
+              label="Xóa hồ sơ"
+              variant="glass"
+              className="hover:bg-danger/60"
+              onClick={remove}
+              disabled={saving}
+            />
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge status={record.status} />
