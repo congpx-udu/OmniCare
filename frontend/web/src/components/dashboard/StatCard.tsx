@@ -30,7 +30,7 @@ export function StatCard({ label, icon, value, unit, sub, tone, to }: StatCardPr
         <span className="flex flex-wrap items-baseline gap-x-1.5">
           <span
             className={cn(
-              'font-heading text-primary text-2xl font-bold whitespace-nowrap sm:text-3xl',
+              'font-heading text-primary max-w-full truncate text-2xl font-bold sm:text-3xl',
               tone,
             )}
           >

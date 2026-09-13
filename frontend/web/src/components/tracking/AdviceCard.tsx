@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Alert, IconButton, SectionCard } from '@/components/common'
 import { NavIcon } from '@/components/layout'
 import {
@@ -25,7 +25,15 @@ const TREND_CLASS: Record<TrendDirection, { rotate: string; tone: string }> = {
 /** Kết quả một lần AI phân tích: tổng quan (thu gọn), xu hướng dạng chip, cảnh báo, đề xuất có nút đã làm */
 export function AdviceCard({ advice, onToggle, compact = false }: AdviceCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [clamped, setClamped] = useState(false)
+  const summaryRef = useRef<HTMLParagraphElement>(null)
   const done = advice.suggestions.filter((s) => s.done).length
+
+  useLayoutEffect(() => {
+    const el = summaryRef.current
+    if (!el) return
+    setClamped(el.scrollHeight > el.clientHeight + 1)
+  }, [advice.summary])
 
   return (
     <SectionCard
@@ -38,23 +46,31 @@ export function AdviceCard({ advice, onToggle, compact = false }: AdviceCardProp
               {done}/{advice.suggestions.length}
             </span>
           )}
-          <IconButton
-            icon="chevron-down"
-            label={expanded ? 'Thu gọn' : 'Xem thêm'}
-            variant="ghost"
-            size="sm"
-            active={expanded}
-            aria-expanded={expanded}
-            onClick={() => setExpanded((v) => !v)}
-            className={cn('transition-transform', expanded && 'rotate-180')}
-          />
+          {clamped && (
+            <IconButton
+              icon="chevron-down"
+              label={expanded ? 'Thu gọn' : 'Xem thêm'}
+              variant="ghost"
+              size="sm"
+              active={expanded}
+              aria-expanded={expanded}
+              onClick={() => setExpanded((v) => !v)}
+              className={cn('transition-transform', expanded && 'rotate-180')}
+              tooltipSide="left"
+            />
+          )}
         </>
       }
     >
       <p className="text-xs text-neutral-500">
         {formatDate(advice.from)} – {formatDate(advice.to)} · {advice.logCount} ngày
       </p>
-      <p className={cn('text-primary mt-2', !expanded && 'line-clamp-3')}>{advice.summary}</p>
+      <p
+        ref={summaryRef}
+        className={cn('text-primary mt-2', !expanded && 'line-clamp-3')}
+      >
+        {advice.summary}
+      </p>
 
       {advice.alerts.length > 0 && (
         <div className="mt-3 space-y-2">
@@ -107,7 +123,7 @@ export function AdviceCard({ advice, onToggle, compact = false }: AdviceCardProp
                 active={s.done}
                 className="rounded-full"
                 onClick={() => onToggle(i, !s.done)}
-                tooltipSide="right"
+                tooltipSide="top"
               />
               <div className="min-w-0 flex-1">
                 <p
